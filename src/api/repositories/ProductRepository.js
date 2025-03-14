@@ -69,6 +69,57 @@ class ProductRepository extends BaseRepository {
       limit
     });
   }
+
+  async update(productId, productData) {
+    try {
+      // Only update fields that are present in productData
+      const [updatedCount, [updatedProduct]] = await this.model.update(productData, {
+        where: { id: productId },
+        returning: true,  // Return the updated row(s)
+      });
+  
+      if (updatedCount === 0) {
+        throw new Error('Failed to update product');
+      }
+  
+      return updatedProduct;  // Return the updated product
+    } catch (error) {
+      throw new Error('Error updating product');
+    }
+  }
+  async decrementStock(productId, quantity, transaction = null) {
+    return await this.model.decrement('stock', {
+      by: quantity,
+      where: { id: productId },
+      transaction // Automatically uses the passed transaction or null if not provided
+    });
+  }
+
+  async incrementStock(productId, quantity, transaction = null) {
+    const product = await this.model.findByPk(productId, { transaction });
+
+    if (!product) {
+      throw new Error(`Product with ID ${productId} not found`);
+    }
+
+    console.log(`Stock before increment: ${product.stock}`);
+
+    const result = await this.model.increment('stock', {
+      by: quantity,
+      where: { id: productId },
+      transaction // Automatically uses the passed transaction or null if not provided
+    });
+
+    console.log('Increment result:', result);
+
+    // Fetch updated product to confirm
+    const updatedProduct = await this.model.findByPk(productId, { transaction });
+
+    console.log(`Stock after increment: ${updatedProduct.stock}`);
+
+    return updatedProduct;
+  }
+
 }
 
 export default new ProductRepository();

@@ -20,6 +20,7 @@ export const validateUpdateProfile = (req, res, next) => {
 };
 
 export const validateChangePassword = (req, res, next) => {
+  console.log("inside validate ChangePassword")
   const { error } = changePasswordSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ message: error.details[0].message });

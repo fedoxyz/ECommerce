@@ -1,6 +1,7 @@
 import BaseRepository from './BaseRepository.js';
 import { Category, Product } from '../models/index.js';
 import sequelize from '../../configs/database.js';
+import { Sequelize } from 'sequelize';
 
 class CategoryRepository extends BaseRepository {
   constructor() {
@@ -24,6 +25,17 @@ class CategoryRepository extends BaseRepository {
       group: ['Category.id'],
       order: [['name', 'ASC']]
     });
+  }
+
+  async create(categoryData) {
+    try {
+      return await this.model.create(categoryData);
+    } catch (error) {
+      if (error instanceof Sequelize.UniqueConstraintError) {
+        throw new Error('Category name already exists');
+      }
+      throw error; // rethrow other errors
+    }
   }
 }
 

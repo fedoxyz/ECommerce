@@ -29,23 +29,26 @@ class ProductService {
     
     return ProductRepository.create(productData);
   }
-  
+ 
   async updateProduct(productId, productData) {
     // Check if product exists
     const product = await ProductRepository.findById(productId);
     if (!product) {
       throw new Error('Product not found');
     }
-    
-    // Check if category exists if categoryId is provided
+  
+    // Validate categoryId if provided
     if (productData.categoryId) {
       const category = await CategoryRepository.findById(productData.categoryId);
       if (!category) {
         throw new Error('Category not found');
       }
     }
-    
-    return ProductRepository.update(productId, productData);
+  
+    // Update only the fields that are provided in the productData
+    const updatedProduct = await ProductRepository.update(productId, productData);
+  
+    return updatedProduct;
   }
   
   async deleteProduct(productId) {

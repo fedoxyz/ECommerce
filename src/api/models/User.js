@@ -45,7 +45,10 @@ const User = sequelize.define('User', {
       }
     },
     beforeUpdate: async (user) => {
-      if (user.changed('password')) {
+      // Either log to see if this hook is being called at all
+      console.log('beforeUpdate hook called', user.changed('password'));
+      
+      if (user.changed('password') && user.password) {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
       }
@@ -54,6 +57,7 @@ const User = sequelize.define('User', {
 });
 
 User.prototype.isValidPassword = async function(password) {
+  console.log(`${password} - password, ${this.password} - this password`)
   return await bcrypt.compare(password, this.password);
 };
 

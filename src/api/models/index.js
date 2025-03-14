@@ -9,7 +9,7 @@ import Review from './Review.js';
 
 // Define relationships
 User.hasOne(Cart);
-Cart.belongsTo(User);
+Cart.belongsTo(User, { foreignKey: 'UserId' });
 
 User.hasMany(Order);
 Order.belongsTo(User);
@@ -17,16 +17,17 @@ Order.belongsTo(User);
 User.hasMany(Review);
 Review.belongsTo(User);
 
-Category.hasMany(Product);
-Product.belongsTo(Category);
+Category.hasMany(Product, { foreignKey: 'categoryId' });
+Product.belongsTo(Category, { foreignKey: 'categoryId' });
 
 Product.hasMany(Review);
 Review.belongsTo(Product);
 
-Cart.hasMany(CartItem);
-CartItem.belongsTo(Cart);
+CartItem.belongsTo(Cart, { foreignKey: 'CartId' });
+CartItem.belongsTo(Product, { foreignKey: 'ProductId' });
+Cart.hasMany(CartItem, { foreignKey: 'CartId' });
 
-Product.hasMany(CartItem);
+Product.hasMany(CartItem, { foreignKey: 'ProductId' });
 CartItem.belongsTo(Product);
 
 Order.hasMany(OrderItem);

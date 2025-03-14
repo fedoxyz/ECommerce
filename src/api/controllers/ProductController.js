@@ -36,7 +36,24 @@ class ProductController {
       next(error);
     }
   }
+ 
+  async updateProduct(req, res, next) {
+    try {
+      // Get the fields to update from the request body
+      const productId = req.params.id;
+      const productData = req.body; // This contains only the fields that need to be updated
   
+      // Pass the product data to the service to handle the update
+      const updatedProduct = await ProductService.updateProduct(productId, productData);
+      
+      // Return the updated product in the response
+      res.status(200).json(updatedProduct);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
   async updateProduct(req, res, next) {
     try {
       const product = await ProductService.updateProduct(req.params.id, req.body);

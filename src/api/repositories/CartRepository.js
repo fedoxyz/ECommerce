@@ -1,27 +1,38 @@
 import BaseRepository from './BaseRepository.js';
 import { Cart, CartItem, Product } from '../models/index.js';
-import sequelize from '../../configs/database.js';
 
 class CartRepository extends BaseRepository {
   constructor() {
     super(Cart);
   }
 
-  async findByUserId(userId) {
-    return this.model.findOne({
+
+async findByUserId(userId, transaction = null) {
+  try {
+    // Find the cart by UserId, include associated CartItems and Products
+    const cart = await this.model.findOne({
       where: { UserId: userId },
       include: [
         {
           model: CartItem,
-          include: [Product]
+          include: [Product] // Ensure this association is correctly defined
         }
-      ]
+      ],
+      transaction  // Pass transaction here if it is provided, otherwise, it will be null
     });
-  }
 
-  async addItem(cartId, productId, quantity, price) {
-    const transaction = await sequelize.transaction();
-    
+    // Handle the case when no cart is found
+    if (!cart) {
+      throw new Error('Cart not found');
+    }
+
+    return cart;
+  } catch (error) {
+    throw error; // Rethrow the error so it can be handled elsewhere
+  }
+}
+
+  async addItem(cartId, productId, quantity, price, transaction) {
     try {
       let cartItem = await CartItem.findOne({
         where: {
@@ -43,10 +54,8 @@ class CartRepository extends BaseRepository {
         }, { transaction });
       }
 
-      await transaction.commit();
       return cartItem;
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
@@ -63,12 +72,13 @@ class CartRepository extends BaseRepository {
     );
   }
 
-  async removeItem(cartId, itemId) {
+  async removeItem(cartId, itemId, transaction) {
     return CartItem.destroy({
       where: {
         id: itemId,
         CartId: cartId
-      }
+      },
+      transaction
     });
   }
 

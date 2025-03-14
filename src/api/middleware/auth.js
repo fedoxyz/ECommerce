@@ -3,6 +3,7 @@ import { User } from '../models/index.js';
 
 // Middleware to check if the user is authenticated
 const authenticate = async (req, res, next) => {
+  console.log("Inside authenticate")
   try {
     const authHeader = req.headers.authorization;
     
@@ -17,6 +18,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
     
+    console.log("exeuting findByPk inside authenticate")
     const user = await User.findByPk(decoded.id);
     
     if (!user || !user.isActive) {
@@ -33,6 +35,7 @@ const authenticate = async (req, res, next) => {
 
 // Middleware to check if the user is an admin
 const isAdmin = (req, res, next) => {
+  console.log("inside isAdmin req.user", req.user)
   if (req.user && req.user.role === 'admin') {
     next();
   } else {

@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import { swaggerUi, swaggerDocs } from './configs/swagger.js';
 import apiRoutes from './api/routes/index.js';
 
 dotenv.config();
@@ -24,6 +25,13 @@ app.use('/api', limiter);
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Test route works' });
+});
 
 // API routes
 app.use('/api', apiRoutes);

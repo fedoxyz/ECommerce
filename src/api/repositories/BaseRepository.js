@@ -4,41 +4,63 @@ class BaseRepository {
   }
 
   async findAll(options = {}) {
-    return this.model.findAll(options);
+    return this.model.findAll({
+      ...options,
+      transaction: options.transaction || null 
+    });
   }
 
   async findById(id, options = {}) {
-    return this.model.findByPk(id, options);
+    console.log("inside base repo findById");
+    return this.model.findByPk(id, {
+      ...options,
+      transaction: options.transaction || null 
+    });
   }
 
   async findOne(options = {}) {
-    return this.model.findOne(options);
+    return this.model.findOne({
+      ...options,
+      transaction: options.transaction || null // 
+    });
   }
 
-  async create(data) {
-    return this.model.create(data);
+  async create(data, options = {}) {
+    return this.model.create(data, {
+      ...options,
+      transaction: options.transaction || null // 
+    });
   }
 
-  async update(id, data) {
+  async update(id, data, options = {}) {
+    console.log("inside update baserepo");
     const [updated] = await this.model.update(data, {
       where: { id },
-      returning: true
+      returning: true,
+      individualHooks: true,
+      ...options,
+      transaction: options.transaction || null 
     });
     if (updated) {
-      return this.findById(id);
+      return true;
     }
     return null;
   }
 
-  async delete(id) {
+  async delete(id, options = {}) {
     const deleted = await this.model.destroy({
-      where: { id }
+      where: { id },
+      ...options,
+      transaction: options.transaction || null 
     });
     return deleted > 0;
   }
 
   async count(options = {}) {
-    return this.model.count(options);
+    return this.model.count({
+      ...options,
+      transaction: options.transaction || null 
+    });
   }
 }
 

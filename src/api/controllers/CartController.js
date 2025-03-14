@@ -32,6 +32,7 @@ class CartController {
   
   async removeItem(req, res, next) {
     try {
+      console.log(req.params.itemId)
       const cart = await CartService.removeCartItem(req.user.id, req.params.itemId);
       res.json(cart);
     } catch (error) {

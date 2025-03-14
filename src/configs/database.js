@@ -19,5 +19,16 @@ const sequelize = new Sequelize({
   logging: process.env.NODE_ENV === 'development' ? console.log : false
 });
 
+// Sync models and refresh the database if in development mode
+if (process.env.NODE_ENV === 'development') {
+  sequelize.sync({ force: false }) // force: true will drop the existing tables
+    .then(() => {
+      console.log('Database has been synced!');
+    })
+    .catch((error) => {
+      console.error('Error syncing database:', error);
+    });
+}
+
 export default sequelize;
 

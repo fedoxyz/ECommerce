@@ -22,7 +22,8 @@ class UserController {
   async changePassword(req, res, next) {
     try {
       const { currentPassword, newPassword } = req.body;
-      const result = await UserService.changePassword(req.user.id, currentPassword, newPassword);
+      const result = await UserService.changePassword(req.user, currentPassword, newPassword);
+      console.log("after getting result in changePassword in controllers")
       res.json(result);
     } catch (error) {
       next(error);

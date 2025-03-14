@@ -9,6 +9,7 @@ class UserRepository extends BaseRepository {
   async findByEmail(email) {
     return this.model.findOne({ where: { email } });
   }
+
 }
 
 export default new UserRepository();

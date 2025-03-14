@@ -29,7 +29,14 @@ const Product = sequelize.define('Product', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
-  }
+  },
+  categoryId: {
+    type: DataTypes.UUID,
+    references: {
+      model: 'Categories', // The table name for the Category model
+      key: 'id', // The column to reference
+    },
+  },
 });
 
 export default Product;
