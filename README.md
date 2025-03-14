@@ -5,6 +5,7 @@ Change directory
 `cd ECommerce`
 
 Add `--build` if not builded yet:
+
 Dev:
 `docker-compose --env-file .env -f docker-compose.yml -f docker-compose.dev.yml up`
 
