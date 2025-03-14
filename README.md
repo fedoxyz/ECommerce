@@ -1,4 +1,10 @@
-Add --build when executing first time
+Clone this repo
+`git clone https://github.com/fedoxyz/ECommerce.git`
+
+Change directory
+`cd ECommerce`
+
+Add `--build` when executing first time
 
 Dev:
 `docker-compose --env-file .env -f docker-compose.yml -f docker-compose.dev.yml up`
