@@ -36,14 +36,27 @@ class CategoryService {
     }
     return CategoryRepository.update(id, categoryData);
   }
-
-  async deleteCategory(id) {
-    const category = await CategoryRepository.findById(id);
-    if (!category) {
-      throw new Error('Category not found');
-    }
-    return CategoryRepository.delete(id);
+async deleteCategory(id) {
+  const category = await CategoryRepository.findById(id);
+  if (!category) {
+    throw new Error('Category not found');
   }
+  
+  try {
+    return await CategoryRepository.delete(id);
+  } catch (error) {
+    // Check if this is a foreign key constraint error
+    if (error.name === 'SequelizeForeignKeyConstraintError' || 
+        (error.original && error.original.constraint && 
+         error.original.constraint.includes('categoryId_fkey'))) {
+      // Transform into a more friendly error
+      throw new Error('Cannot delete this category because it has associated products');
+    }
+    // Re-throw any other errors
+    throw error;
+  }
+}
+
 }
 
 export default new CategoryService();

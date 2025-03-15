@@ -1,3 +1,5 @@
+import logger from "../../utils/logger.js";
+
 class BaseRepository {
   constructor(model) {
     this.model = model;
@@ -28,21 +30,22 @@ class BaseRepository {
   async create(data, options = {}) {
     return this.model.create(data, {
       ...options,
-      transaction: options.transaction || null // 
+      transaction: options.transaction || null,
     });
   }
 
   async update(id, data, options = {}) {
     console.log("inside update baserepo");
-    const [updated] = await this.model.update(data, {
+    const [updated, resultData] = await this.model.update(data, {
       where: { id },
       returning: true,
       individualHooks: true,
+      returning: true,
       ...options,
       transaction: options.transaction || null 
     });
     if (updated) {
-      return true;
+      return resultData;
     }
     return null;
   }

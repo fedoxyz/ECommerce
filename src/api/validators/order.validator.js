@@ -8,9 +8,9 @@ const addressSchema = Joi.object({
   country: Joi.string().required()
 });
 
+// Modified to accept product IDs and quantities directly
 const createOrderSchema = Joi.object({
   shippingAddress: addressSchema.required(),
-  paymentMethod: Joi.string().required()
 });
 
 const updateOrderStatusSchema = Joi.object({

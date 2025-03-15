@@ -115,12 +115,10 @@ router.get('/:id', authenticate, CategoryController.getCategoryById);
  *                   type: string
  *                 description:
  *                   type: string
- *       400:
- *         description: Invalid input
  *       500:
  *         description: Internal server error
  */
-router.post('/', authenticate, isAdmin,  CategoryController.createCategory);
+router.post('/', authenticate, isAdmin, validateCategory, CategoryController.createCategory);
 
 /**
  * @swagger
@@ -156,16 +154,10 @@ router.post('/', authenticate, isAdmin,  CategoryController.createCategory);
  *             schema:
  *               type: object
  *               properties:
- *                 id:
- *                   type: string
  *                 name:
  *                   type: string
  *                 description:
  *                   type: string
- *       400:
- *         description: Invalid input
- *       404:
- *         description: Category not found
  *       500:
  *         description: Internal server error
  */
@@ -187,10 +179,8 @@ router.put('/:id', authenticate, isAdmin, validateCategory, CategoryController.u
  *     security:
  *       - BearerAuth: []
  *     responses:
- *       204:
+ *       200:
  *         description: Category deleted successfully
- *       404:
- *         description: Category not found
  *       500:
  *         description: Internal server error
  */

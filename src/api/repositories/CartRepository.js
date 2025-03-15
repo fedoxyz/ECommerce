@@ -60,14 +60,16 @@ async findByUserId(userId, transaction = null) {
     }
   }
 
-  async updateItem(cartId, itemId, quantity) {
+  async updateItem(cartId, itemId, quantity, transaction) {
     return CartItem.update(
       { quantity },
       { 
         where: {
           id: itemId,
           CartId: cartId
-        }
+        },
+        returning: true,
+        transaction
       }
     );
   }
@@ -94,6 +96,44 @@ async findByUserId(userId, transaction = null) {
     });
     return result || 0;
   }
+
+async removeItemsByProductIds(cartId, productIds, transaction = null) {
+  try {
+    // Find all cart items for the given cart that match the product IDs
+    const cartItems = await CartItem.findAll({
+      where: {
+        CartId: cartId,
+        ProductId: {
+          [Op.in]: productIds
+        }
+      },
+      transaction
+    });
+    
+    // If no items found, return early
+    if (!cartItems || cartItems.length === 0) {
+      return true;
+    }
+    
+    // Extract the cart item IDs
+    const cartItemIds = cartItems.map(item => item.id);
+    
+    // Delete all matching cart items
+    await CartItem.destroy({
+      where: {
+        id: {
+          [Op.in]: cartItemIds
+        }
+      },
+      transaction
+    });
+    
+    return true;
+  } catch (error) {
+    logger.error(`Error removing items from cart ${cartId}: ${error.message}`);
+    throw error;
+  }
+}
 }
 
 export default new CartRepository();

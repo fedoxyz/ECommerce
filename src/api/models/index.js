@@ -6,10 +6,11 @@ import CartItem from './CartItem.js';
 import Order from './Order.js';
 import OrderItem from './OrderItem.js';
 import Review from './Review.js';
+import PaymentIntent from './PaymentIntent.js'
 
 // Define relationships
 User.hasOne(Cart);
-Cart.belongsTo(User, { foreignKey: 'UserId' });
+Cart.belongsTo(User);
 
 User.hasMany(Order);
 Order.belongsTo(User);
@@ -17,7 +18,7 @@ Order.belongsTo(User);
 User.hasMany(Review);
 Review.belongsTo(User);
 
-Category.hasMany(Product, { foreignKey: 'categoryId' });
+Category.hasMany(Product, { foreignKey: 'categoryId', onDelete: "RESTRICT" });
 Product.belongsTo(Category, { foreignKey: 'categoryId' });
 
 Product.hasMany(Review);
@@ -36,6 +37,12 @@ OrderItem.belongsTo(Order);
 Product.hasMany(OrderItem);
 OrderItem.belongsTo(Product);
 
+Order.hasOne(PaymentIntent);
+
+PaymentIntent.belongsTo(Order, { foreignKey: "OrderId" });
+PaymentIntent.belongsTo(User);
+
+
 export {
   User,
   Category,
@@ -44,5 +51,6 @@ export {
   CartItem,
   Order,
   OrderItem,
-  Review
+  Review,
+  PaymentIntent
 };

@@ -7,41 +7,108 @@ import { validateCreateOrder, validateUpdateOrderStatus } from '../validators/or
  * @swagger
  * tags:
  *   name: Orders
- *   description: API for managing orders in the e-commerce platform.
- */
-
-/**
- * @swagger
+ *   description: Order management endpoints
+ * 
  * components:
- *   securitySchemes:
- *     BearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  *   schemas:
- *     Order:
+ *     Address:
+ *       type: object
+ *       required:
+ *         - street
+ *         - city
+ *         - state
+ *         - postalCode
+ *         - country
+ *       properties:
+ *         street:
+ *           type: string
+ *           description: Street address
+ *         city:
+ *           type: string
+ *           description: City name
+ *         state:
+ *           type: string
+ *           description: State or province
+ *         postalCode:
+ *           type: string
+ *           description: Postal or ZIP code
+ *         country:
+ *           type: string
+ *           description: Country name
+ *     
+ *     OrderItem:
+ *       type: object
+ *       required:
+ *         - productId
+ *         - quantity
+ *       properties:
+ *         productId:
+ *           type: string
+ *           description: ID of the product
+ *         quantity:
+ *           type: integer
+ *           minimum: 1
+ *           description: Quantity of the product
+ *     
+ *     CreateOrderRequest:
+ *       type: object
+ *       required:
+ *         - shippingAddress
+ *         - paymentMethod
+ *       properties:
+ *         shippingAddress:
+ *           $ref: '#/components/schemas/Address'
+ *     
+ *     UpdateOrderStatusRequest:
+ *       type: object
+ *       required:
+ *         - status
+ *       properties:
+ *         status:
+ *           type: string
+ *           enum: [pending, processing, shipped, delivered, cancelled]
+ *           description: New order status
+ *     
+ *     ProcessPaymentRequest:
+ *       type: object
+ *       required:
+ *         - paymentMethodId
+ *       properties:
+ *         paymentMethodId:
+ *           type: string
+ *           description: Payment method identifier
+ *     
+ *     OrderResponse:
  *       type: object
  *       properties:
  *         id:
  *           type: string
+ *           description: Order unique identifier
  *         userId:
  *           type: string
- *         totalPrice:
+ *           description: User who placed the order
+ *         totalAmount:
  *           type: number
  *           format: float
+ *           description: Total order amount
  *         status:
  *           type: string
- *           enum: [pending, shipped, delivered, canceled]
+ *           enum: [pending, paid, processing, shipped, delivered, cancelled, payment_failed]
+ *           description: Current order status
+ *         shippingAddress:
+ *           $ref: '#/components/schemas/Address'
+ *         paymentMethod:
+ *           type: string
+ *           description: Payment method used
  *         createdAt:
  *           type: string
  *           format: date-time
+ *           description: Order creation timestamp
  *         updatedAt:
  *           type: string
  *           format: date-time
- *     OrderCreate:
- *       type: object
- *       properties:
- *         items:
+ *           description: Order last update timestamp
+ *         orderItems:
  *           type: array
  *           items:
  *             type: object
@@ -50,18 +117,19 @@ import { validateCreateOrder, validateUpdateOrderStatus } from '../validators/or
  *                 type: string
  *               quantity:
  *                 type: integer
- *         shippingAddress:
+ *               price:
+ *                 type: number
+ *                 format: float
+ *     
+ *     Error:
+ *       type: object
+ *       properties:
+ *         message:
  *           type: string
- *         paymentMethod:
- *           type: string
- *           enum: [credit_card, paypal, stripe]
- *         totalPrice:
- *           type: number
- *           format: float
+ *           description: Error message
  */
 
 const router = express.Router();
-
 /**
  * @swagger
  * /orders:
@@ -69,39 +137,56 @@ const router = express.Router();
  *     summary: Get all orders for the authenticated user
  *     tags: [Orders]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
- *         required: false
  *         schema:
  *           type: integer
  *           default: 1
+ *         description: Page number
  *       - in: query
  *         name: limit
- *         required: false
  *         schema:
  *           type: integer
  *           default: 10
- *       - in: query
- *         name: status
- *         required: false
- *         schema:
- *           type: string
- *           enum: [pending, shipped, delivered, canceled]
+ *         description: Number of orders per page
  *     responses:
  *       200:
  *         description: List of orders
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Order'
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/OrderResponse'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
- *         description: Internal server error
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ * 
  */
 router.get('/', authenticate, orderController.getAllOrders);
 
@@ -109,29 +194,43 @@ router.get('/', authenticate, orderController.getAllOrders);
  * @swagger
  * /orders/{id}:
  *   get:
- *     summary: Get a specific order by ID for the authenticated user
+ *     summary: Get order by ID
  *     tags: [Orders]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Order ID
  *     responses:
  *       200:
  *         description: Order details
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               $ref: '#/components/schemas/OrderResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Order not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
- *         description: Internal server error
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ * 
  */
 router.get('/:id', authenticate, orderController.getOrderById);
 
@@ -142,117 +241,107 @@ router.get('/:id', authenticate, orderController.getOrderById);
  *     summary: Create a new order
  *     tags: [Orders]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/OrderCreate'
+ *             $ref: '#/components/schemas/CreateOrderRequest'
  *     responses:
  *       201:
  *         description: Order created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               $ref: '#/components/schemas/OrderResponse'
  *       400:
- *         description: Bad request
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
- *         description: Internal server error
- */
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */               
 router.post('/', authenticate, validateCreateOrder, orderController.createOrder);
 
 /**
  * @swagger
  * /orders/{id}/status:
  *   put:
- *     summary: Update the status of an order (admin only)
+ *     summary: Update order status (Admin only)
  *     tags: [Orders]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Order ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               status:
- *                 type: string
- *                 enum: [pending, shipped, delivered, canceled]
+ *             $ref: '#/components/schemas/UpdateOrderStatusRequest'
  *     responses:
  *       200:
- *         description: Order status updated
+ *         description: Order status updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               $ref: '#/components/schemas/OrderResponse'
  *       400:
- *         description: Bad request
+ *         description: Invalid status value
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Forbidden
+ *         description: Forbidden - Admin only
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Order not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
- *         description: Internal server error
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ * 
  */
 router.put('/:id/status', authenticate, isAdmin, validateUpdateOrderStatus, orderController.updateOrderStatus);
-
-/**
- * @swagger
- * /orders/{id}/payment:
- *   post:
- *     summary: Process payment for an order
- *     tags: [Orders]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               paymentDetails:
- *                 type: object
- *                 description: Payment details for the order
- *     responses:
- *       200:
- *         description: Payment processed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Payment processed successfully."
- *       400:
- *         description: Bad request
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Order not found
- *       500:
- *         description: Internal server error
- */
-router.post('/:id/payment', authenticate, orderController.processPayment);
 
 export default router;

@@ -18,8 +18,6 @@ class CartService {
     logger.info(`Transaction started for user ID: ${userId}`); // Log info when starting the transaction
   
     try {
-      logger.debug("Entering try block"); // Debug log for entering the block
-  
       // Check if product exists and has enough stock
       const product = await ProductRepository.findById(productId, { transaction });
       if (!product) {
@@ -61,24 +59,38 @@ class CartService {
 
   
   async updateCartItem(userId, itemId, quantity) {
-    const cart = await CartRepository.findByUserId(userId);
-    if (!cart) {
-      throw new Error('Cart not found');
+    const transaction = await sequelize.transaction(); // Start transaction
+    try {
+      const cart = await CartRepository.findByUserId(userId);
+      if (!cart) {
+        throw new Error('Cart not found');
+      }
+      
+      const cartItem = cart.CartItems.find(item => item.id === itemId);
+      if (!cartItem) {
+        throw new Error('Cart item not found');
+      }
+      // Check if the product has enough stock
+      const product = await ProductRepository.findById(cartItem.ProductId);
+      if ((product.stock + cartItem.quantity) < quantity) {
+        throw new Error('Insufficient stock');
+      }
+
+      const residualQuantity = quantity - cartItem.quantity
+
+      if (residualQuantity < 0) {
+          ProductRepository.incrementStock(product.id, Math.abs(residualQuantity), transaction)
+      } else {
+          ProductRepository.decrementStock(product.id, residualQuantity, transaction)
+      }
+      
+      const result = await CartRepository.updateItem(cart.id, itemId, quantity, transaction);
+      transaction.commit();
+      return result[1];
+    } catch (error) {
+      transaction.rollback()
+      throw error;
     }
-    
-    const cartItem = cart.CartItems.find(item => item.id === itemId);
-    if (!cartItem) {
-      throw new Error('Cart item not found');
-    }
-    
-    // Check if the product has enough stock
-    const product = await ProductRepository.findById(cartItem.ProductId);
-    if (product.stock < quantity) {
-      throw new Error('Insufficient stock');
-    }
-    
-    await CartRepository.updateItem(cart.id, itemId, quantity);
-    return this.getCart(userId);
   }
 
   async removeCartItem(userId, itemId) {
@@ -96,7 +108,7 @@ class CartService {
         throw new Error('No items in the cart');
       }
       
-      const item = cart.CartItems.find(item => item.Product.dataValues.id === itemId);
+      const item = cart.CartItems.find(item => item.id === itemId);
     
       // Check if the item was found
       if (!item) {
@@ -119,6 +131,20 @@ class CartService {
       throw error;
     }
   }
+
+  async clearCart(userId) {
+    const cart = await CartRepository.findByUserId(userId);
+    if (!cart) {
+      throw new Error('Cart not found');
+    }
+    for (const item of cart.CartItems) {
+      await ProductRepository.incrementStock(item.Product.id, item.quantity);
+    }
+
+    await CartRepository.clearCart(cart.id);
+    return { message: 'Cart cleared successfully' };
+  }
+
 }
 
 export default new CartService();

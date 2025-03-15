@@ -14,7 +14,7 @@ class OrderController {
   
   async getOrderById(req, res, next) {
     try {
-      const order = await OrderService.getOrderById(req.params.id, req.user.id);
+      const order = await OrderService.getOrderById(req.params.id, req.user.id, req.user.role);
       res.json(order);
     } catch (error) {
       next(error);

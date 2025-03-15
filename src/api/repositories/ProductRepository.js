@@ -96,14 +96,6 @@ class ProductRepository extends BaseRepository {
   }
 
   async incrementStock(productId, quantity, transaction = null) {
-    const product = await this.model.findByPk(productId, { transaction });
-
-    if (!product) {
-      throw new Error(`Product with ID ${productId} not found`);
-    }
-
-    console.log(`Stock before increment: ${product.stock}`);
-
     const result = await this.model.increment('stock', {
       by: quantity,
       where: { id: productId },
@@ -112,12 +104,7 @@ class ProductRepository extends BaseRepository {
 
     console.log('Increment result:', result);
 
-    // Fetch updated product to confirm
-    const updatedProduct = await this.model.findByPk(productId, { transaction });
-
-    console.log(`Stock after increment: ${updatedProduct.stock}`);
-
-    return updatedProduct;
+    return result;
   }
 
 }

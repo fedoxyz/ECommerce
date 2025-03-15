@@ -19,7 +19,12 @@ const CartItem = sequelize.define('CartItem', {
   ProductId: {
     type: DataTypes.UUID,
     allowNull: false,  // Assuming a CartItem is always linked to a Product
-  }
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+  },
 });
 
 export default CartItem;

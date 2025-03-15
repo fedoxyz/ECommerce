@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../../configs/database.js';
+import PaymentIntent from './PaymentIntent.js';
 
 const Order = sequelize.define('Order', {
   id: {
@@ -9,7 +10,8 @@ const Order = sequelize.define('Order', {
   },
   orderNumber: {
     type: DataTypes.STRING,
-    unique: true
+    unique: true,
+    allowNull: false,
   },
   status: {
     type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'),
@@ -27,9 +29,18 @@ const Order = sequelize.define('Order', {
     type: DataTypes.ENUM('pending', 'paid', 'failed'),
     defaultValue: 'pending'
   },
-  paymentMethod: {
-    type: DataTypes.STRING
-  }
+  paymentIntentId: {
+    type: DataTypes.UUID,
+    references: {
+      model: PaymentIntent,
+      key: 'id'
+    },
+    allowNull: true
+  },
+  expirationTime: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
 });
 
 export default Order;
