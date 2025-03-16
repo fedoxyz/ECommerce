@@ -20,7 +20,7 @@ class CategoryRepository extends BaseRepository {
         'id',
         'name',
         'description',
-        [sequelize.fn('COUNT', sequelize.col('Products.id')), 'productCount']
+        [sequelize.fn('COUNT', sequelize.col('Product.id')), 'productCount']
       ],
       group: ['Category.id'],
       order: [['name', 'ASC']]

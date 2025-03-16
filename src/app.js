@@ -5,6 +5,10 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { swaggerUi, swaggerDocs } from './configs/swagger.js';
 import apiRoutes from './api/routes/index.js';
+import JobScheduler from './services/queue/scheduler.js'; 
+import { createBullBoard } from '@bull-board/api';  
+import { BullAdapter } from '@bull-board/api/bullAdapter.js';  
+import { ExpressAdapter } from '@bull-board/express';
 
 dotenv.config();
 
@@ -35,6 +39,20 @@ app.get('/api/test', (req, res) => {
 
 // API routes
 app.use('/api', apiRoutes);
+
+// Setup BullBoard UI for job management (separate from API routes)
+const jobSchedulerQueue = JobScheduler.queue;  // Use the queue from your JobScheduler
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath('/admin/queues');  // Customize the URL path for BullBoard UI
+
+createBullBoard({
+  queues: [new BullAdapter(jobSchedulerQueue)],  // Add your Bull queue here
+  serverAdapter,
+});
+
+// Serve BullBoard UI at /admin/queues
+app.use('/admin/queues', serverAdapter.getRouter());
+
 
 // Default route
 app.get('/', (req, res) => {

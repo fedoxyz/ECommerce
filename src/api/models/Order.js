@@ -40,6 +40,11 @@ const Order = sequelize.define('Order', {
   expirationTime: {
     type: DataTypes.DATE,
     allowNull: false,
+    defaultValue: () => {
+      let date = new Date();
+      date.setMinutes(date.getMinutes() + 30);
+      return date;
+    }
   },
 });
 

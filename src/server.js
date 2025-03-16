@@ -1,6 +1,11 @@
 import app from './app.js';
 import sequelize from './configs/database.js';
 import logger from './utils/logger.js';
+import JobScheduler from './services/queue/scheduler.js';
+import { createBullBoard } from '@bull-board/api';  
+import { BullAdapter } from '@bull-board/api/bullAdapter.js';  
+import { ExpressAdapter } from '@bull-board/express'; 
+
 
 const PORT = process.env.PORT || 3000;
 const MAX_RETRIES = 5;
@@ -14,13 +19,14 @@ async function initializeDatabase() {
       await sequelize.authenticate();
       logger.info('Database connection has been established successfully.');
 
+      // Sync models and refresh the database if in development mode
       if (process.env.NODE_ENV === 'development') {
-        await sequelize.sync({ alter: true });
-        logger.info('Database synced in development mode.');
+        await sequelize.sync({ force: true }); // force: true will drop the existing tables
+        logger.info('Database has been synced!');
       }
-      return; // Exit the function if successful
+      return;
     } catch (error) {
-      console.error(`Unable to initialize the database (${MAX_RETRIES - retries + 1}/${MAX_RETRIES}):`, error);
+      logger.error(`Unable to initialize the database (${MAX_RETRIES - retries + 1}/${MAX_RETRIES}):`, error);
       retries -= 1;
       if (retries === 0) {
         throw error; // Throw error if all retries are exhausted
@@ -31,6 +37,7 @@ async function initializeDatabase() {
   }
 }
 
+
 async function startServer() {
   return new Promise((resolve, reject) => {
     const server = app.listen(PORT, () => {
@@ -39,7 +46,7 @@ async function startServer() {
     });
 
     server.on('error', (error) => {
-      console.error('Failed to start server:', error);
+      logger.error('Failed to start server:', error);
       reject(error);
     });
   });
@@ -51,7 +58,7 @@ async function initialize() {
     await startServer();
     logger.info('Application initialized successfully.');
   } catch (error) {
-    console.error('Failed to initialize application:', error);
+    logger.error('Failed to initialize application:', error);
     process.exit(1);
   }
 }
@@ -60,7 +67,7 @@ async function initialize() {
   try {
     await initialize();
   } catch (error) {
-    console.error('Unhandled error during initialization:', error);
+    logger.error('Unhandled error during initialization:', error);
     process.exit(1);
   }
 })();

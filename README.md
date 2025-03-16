@@ -10,3 +10,6 @@ Dev:
 Prod:
 `docker-compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up` `--build` 
 
+
+For redis run this on local machine:
+`sudo sysctl -w vm.overcommit_memory=1`
