@@ -32,12 +32,18 @@ class JobScheduler {
     );
 
     queueNames.forEach((queueName) => {
-      this.queues.set(queueName, new Queue(queueName, {
+      var queue = new Queue(queueName, {
         redis: RedisConfig.createQueueClient(),
-      }));
+      });
+      queue.process('*', (job) => this.processJob(queueName, job));
+      queue.on('completed', (job) => this.handleJobCompleted(queueName, job));
+      queue.on('failed', (job, error) => this.handleJobFailed(queueName, job, error));
+      this.queues.set(queueName, queue);
+      this.handlers.set(queueName, new Map());
+      this.loadHandlers(queueName);
     });
 
-    console.log(`Initialized queues: ${[...queueNames].join(", ")}`);
+    logger.info(`Initialized queues: ${[...queueNames].join(", ")}`);
   }
 
   /**
@@ -46,22 +52,6 @@ class JobScheduler {
    * @returns {Queue} - Bull queue instance
    */
   getQueue(queueName) {
-    if (!this.queues.has(queueName)) {
-      const queue = new Queue(queueName, {
-        redis: RedisConfig.createQueueClient(),
-      });
-
-      // Set up processing and event listeners
-      queue.process('*', (job) => this.processJob(queueName, job));
-      queue.on('completed', (job) => this.handleJobCompleted(queueName, job));
-      queue.on('failed', (job, error) => this.handleJobFailed(queueName, job, error));
-
-      this.queues.set(queueName, queue);
-      this.handlers.set(queueName, new Map()); // Store handlers per queue
-
-      // Load handlers for this queue
-      this.loadHandlers(queueName);
-    }
     return this.queues.get(queueName);
   }
 
@@ -70,18 +60,20 @@ class JobScheduler {
    * @param {string} queueName - Name of the queue
    */
   async loadHandlers(queueName) {
+    console.log(queueName)
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const handlersFolder = path.resolve(__dirname, 'handlers', queueName); // Folder per queue
+    const handlersFolder = path.resolve(__dirname, 'handlers'); // Folder per queue
 
     try {
       if (!fs.existsSync(handlersFolder)) return;
-
+      logger.debug("Trying load handlers")
       const files = fs.readdirSync(handlersFolder);
       const queueHandlers = this.handlers.get(queueName);
 
       for (const file of files) {
-        if (file.endsWith('.js')) {
+        if (file.endsWith('.js') && file.startsWith(queueName + '.')) {
+          logger.debug("found file")
           const handlerPath = path.resolve(handlersFolder, file);
           const handlerModule = await import(handlerPath);
 
