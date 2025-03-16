@@ -1,12 +1,11 @@
 import { Server } from 'socket.io';
-import wsConfig from '../../configs/websocket.js';
+import wsConfig from '../../configs/websocket.js';  // Your config
 import logger from '../../utils/logger.js';
-import JobScheduler from '../../services/queue/scheduler.js';  // Assuming this is where you define Bull queues
+import { User } from '../../api/models/index.js';
 
 class WebSocketService {
   constructor() {
     this.io = null;
-    this.handlers = new Map();
     this.namespaces = new Map();
   }
 
@@ -15,14 +14,16 @@ class WebSocketService {
    * @param {Object} server - HTTP server instance
    */
   initialize(server) {
-    this.io = Server(server, wsConfig.socketOptions);
+    this.io = new Server(server, wsConfig.socketOptions);
+
+    this.io.use(this.authenticateSocket.bind(this));
 
     // Set up main namespace
     const mainNamespace = this.io.of(wsConfig.namespaces.MAIN);
     this.setupNamespace(mainNamespace);
     this.namespaces.set(wsConfig.namespaces.MAIN, mainNamespace);
 
-    // Set up additional namespaces
+    // Set up additional namespaces if any
     Object.entries(wsConfig.namespaces).forEach(([key, namespace]) => {
       if (namespace === wsConfig.namespaces.MAIN) return;
 
@@ -30,9 +31,6 @@ class WebSocketService {
       this.setupNamespace(ns);
       this.namespaces.set(namespace, ns);
     });
-
-    // Subscribe to Bull job events
-    this.subscribeToBullEvents();
 
     logger.info('WebSocket service initialized');
   }
@@ -45,12 +43,12 @@ class WebSocketService {
     namespace.on(wsConfig.events.CONNECTION, (socket) => {
       logger.info(`Client connected to ${namespace.name}`);
 
-      // Handle authentication
+      // Handle authentication (example)
       this.handleAuthentication(socket);
 
       // Handle disconnection
       socket.on(wsConfig.events.DISCONNECT, () => {
-        logger.warning(`Client disconnected from ${namespace.name}`);
+        logger.warn(`Client disconnected from ${namespace.name}`);
       });
 
       // Handle errors
@@ -61,77 +59,104 @@ class WebSocketService {
   }
 
   /**
-   * Handle client authentication
-   * @param {Object} socket - Socket.IO socket
+   * Authenticate WebSocket connection
+   * @param {Object} socket - The Socket.IO socket object
+   * @param {Function} next - The next middleware function
    */
-  handleAuthentication(socket) {
-    const token = socket.handshake.auth.token;
-    if (!token) {
-      // Allow anonymous connections but restrict to public rooms
-      socket.join('public');
-      return;
+  async authenticateSocket(socket, next) {
+    try {
+      const token = socket.handshake.auth.token;  // Token passed during the WebSocket handshake
+      if (!token) {
+        return next(new Error('Authentication token required'));
+      }
+
+      // Verify the token and get the user data
+      const decoded = verifyToken(token);
+      if (!decoded) {
+        return next(new Error('Invalid or expired token'));
+      }
+
+      // Fetch user details from the database
+      const user = await User.findByPk(decoded.id);
+      if (!user || !user.isActive) {
+        return next(new Error('User not found or inactive'));
+      }
+
+      // Attach user data to the socket object
+      socket.user = user;
+      next();
+    } catch (error) {
+      logger.error('WebSocket authentication error:', error);
+      return next(new Error('Authentication failed'));
     }
-
-    const userId = 'user-123';  // Replace with actual user ID from token
-    socket.join(`user:${userId}`);
-    socket.data.userId = userId;
-    socket.data.authenticated = true;
   }
 
   /**
-   * Subscribe to Bull job events
-   * Here we listen to events like 'completed', 'failed', etc.
+   * Emit a notification/event to a specific user
+   * @param {string} userId - The user ID to target
+   * @param {string} event - The event name (e.g., 'chat_message', 'notification')
+   * @param {Object} data - Data to send (message, etc.)
+   * @param {string} namespace - The namespace to use (optional)
    */
-  subscribeToBullEvents() {
-    const jobSchedulerQueue = JobScheduler.queue; // Access the Bull queue from JobScheduler
-
-    // Listen for job completion events in Bull
-    jobSchedulerQueue.on('completed', (job, result) => {
-      this.handleBullJobEvent('completed', job, result);
-    });
-
-    // Listen for job failure events in Bull
-    jobSchedulerQueue.on('failed', (job, error) => {
-      this.handleBullJobEvent('failed', job, error);
-    });
-
-    // Add more Bull events if needed (e.g., 'stalled', 'progress', etc.)
-  }
-
-  /**
-   * Handle Bull job events and emit to clients via WebSocket
-   * @param {string} event - Event type (completed, failed, etc.)
-   * @param {Object} job - The Bull job object
-   * @param {any} result - The result of the job (or error message)
-   */
-  handleBullJobEvent(event, job, result) {
-    const namespace = wsConfig.namespaces.MAIN; // Use default namespace, or change as needed
+  sendToUser(userId, event, data, namespace = wsConfig.namespaces.MAIN) {
     const ns = this.namespaces.get(namespace) || this.io;
 
-    const message = {
-      event,
-      payload: {
-        jobId: job.id,
-        status: event,
-        data: result,
-      },
-    };
-
-    // Broadcast the message to all connected clients (can be specific rooms too)
-    ns.emit(event, message);
-    logger.info(`Bull job event: ${event} for job ${job.id}`);
+    // Emit to the user's room
+    ns.to(`user:${userId}`).emit(event, data);
+    logger.info(`Sent ${event} to user ${userId} in ${namespace}`);
   }
 
   /**
-   * Register a handler for WebSocket events
-   * @param {string} event - Event name
-   * @param {Function} handler - Event handler
+   * Broadcast a message to all connected clients (across namespaces or specific room)
+   * @param {string} event - The event name (e.g., 'broadcast_message')
+   * @param {Object} data - Data to send
+   * @param {string} namespace - The namespace to use (optional)
+   * @param {string} room - The room to send the message to (optional)
    */
-  registerHandler(event, handler) {
-    this.handlers.set(event, handler);
+  broadcast(event, data, namespace = wsConfig.namespaces.MAIN, room = '') {
+    const ns = this.namespaces.get(namespace) || this.io;
+
+    if (room) {
+      // Broadcast to a specific room
+      ns.to(room).emit(event, data);
+    } else {
+      // Broadcast to all clients in the namespace
+      ns.emit(event, data);
+    }
+
+    logger.info(`Broadcasted ${event} to room ${room || 'all'} in ${namespace}`);
+  }
+
+  /**
+   * Send a chat message to a specific room
+   * @param {string} room - The room to send the message to
+   * @param {string} event - The event name (e.g., 'chat_message')
+   * @param {Object} message - The message data
+   */
+  sendChatMessage(room, event, message) {
+    this.broadcast(event, message, wsConfig.namespaces.MAIN, room);
+  }
+
+  /**
+   * Register a user to a room
+   * @param {Object} socket - Socket.IO socket
+   * @param {string} room - The room to join
+   */
+  joinRoom(socket, room) {
+    socket.join(room);
+    logger.info(`User ${socket.data.userId} joined room ${room}`);
+  }
+
+  /**
+   * Leave a room
+   * @param {Object} socket - Socket.IO socket
+   * @param {string} room - The room to leave
+   */
+  leaveRoom(socket, room) {
+    socket.leave(room);
+    logger.info(`User ${socket.data.userId} left room ${room}`);
   }
 }
 
-// Export as singleton
 export default new WebSocketService();
 

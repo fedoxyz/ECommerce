@@ -1,10 +1,9 @@
 import Queue from 'bull';
-import EventEmitter from './events/emitter.js';
 import RedisConfig from '../../configs/redis.js';
 import path from 'path';
 import fs from 'fs';
-import { JOB_EVENTS } from './events/types.js';
 import { fileURLToPath } from 'url';
+import logger from '../../utils/logger.js';
 
 /**
  * JobScheduler Class
@@ -15,14 +14,11 @@ class JobScheduler {
   constructor() {
     // Initialize Bull Queue with Redis config
     this.queue = new Queue('job_scheduler', {
-      redis: RedisConfig.createQueueClient()
+      redis: RedisConfig.createQueueClient(),
     });
-    
+
     // Map to store job handlers
     this.handlers = new Map();
-    
-    // Custom EventEmitter for job state changes
-    this.eventEmitter = EventEmitter;
 
     // Process jobs using Bull queue
     this.queue.process(this.processJob.bind(this));
@@ -38,24 +34,30 @@ class JobScheduler {
   /**
    * Dynamically load handlers from the 'handlers' folder
    */
-  loadHandlers() {
+  async loadHandlers() {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const handlersFolder = path.resolve(__dirname, 'events', 'handlers');
-    const files = fs.readdirSync(handlersFolder);
+    const handlersFolder = path.resolve(__dirname, 'handlers');
 
-    files.forEach(async (file) => {
-      const handlerPath = path.resolve(handlersFolder, file);
+    try {
+      const files = fs.readdirSync(handlersFolder);
 
-      // Dynamically import each handler using ES module syntax
-      const handlerModule = await import(handlerPath);
-      const handler = handlerModule.default;
+      for (const file of files) {
+        if (file.endsWith('.js')) {
+          const handlerPath = path.resolve(handlersFolder, file);
+          const handlerModule = await import(handlerPath);
 
-      // Register the handler based on job type (file name)
-      const jobType = file.replace('.js', '');
-      this.registerHandler(jobType, handler);
-    });
-
+          if (handlerModule.default) {
+            const handlers = handlerModule.default;
+            for (const [eventType, handler] of Object.entries(handlers)) {
+              this.registerHandler(eventType, handler);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      logger.error('Error loading handlers:', error);
+    }
   }
 
   /**
@@ -66,11 +68,13 @@ class JobScheduler {
    * @returns {Promise<string>} - Job ID
    */
   async scheduleJob(jobType, payload, delayInSeconds) {
+    logger.debug(`Scheduling job: ${jobType} with payload:`, payload, `Delay: ${delayInSeconds} seconds`);
+  
     const job = await this.queue.add(
       { jobType, payload },
       { delay: delayInSeconds * 1000 }
     );
-    this.eventEmitter.emit(JOB_EVENTS.SCHEDULED, { jobId: job.id, jobType });
+
     return job.id;
   }
 
@@ -85,12 +89,11 @@ class JobScheduler {
     if (handler) {
       try {
         await handler(payload);
-        this.eventEmitter.emit(JOB_EVENTS.COMPLETED, { jobId: job.id, jobType });
       } catch (error) {
-        this.eventEmitter.emit(JOB_EVENTS.FAILED, { jobId: job.id, jobType, error: error.message });
+        logger.error(`Job ${job.id} failed:`, error.message);
       }
     } else {
-      this.eventEmitter.emit(JOB_EVENTS.UNHANDLED, { jobId: job.id, jobType });
+      logger.warn(`No handler registered for job type: ${jobType}`);
     }
   }
 
@@ -99,7 +102,7 @@ class JobScheduler {
    * @param {Object} job - Bull job object
    */
   handleJobCompleted(job) {
-    this.eventEmitter.emit(JOB_EVENTS.COMPLETED, { jobId: job.id, jobType: job.name });
+    logger.info(`Job completed: ${job.id} - Type: ${job.name}`);
   }
 
   /**
@@ -108,7 +111,7 @@ class JobScheduler {
    * @param {Error} error - Error message
    */
   handleJobFailed(job, error) {
-    this.eventEmitter.emit(JOB_EVENTS.FAILED, { jobId: job.id, jobType: job.name, error: error.message });
+    console.error(`Job failed: ${job.id} - Type: ${job.name} - Error: ${error.message}`);
   }
 
   /**
@@ -118,7 +121,9 @@ class JobScheduler {
    */
   registerHandler(jobType, handler) {
     this.handlers.set(jobType, handler);
+    console.log(`Registered handler for event: ${jobType}`);
   }
 }
 
 export default new JobScheduler();
+

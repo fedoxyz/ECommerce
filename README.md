@@ -13,3 +13,9 @@ Prod:
 
 For redis run this on local machine:
 `sudo sysctl -w vm.overcommit_memory=1`
+
+For API docs with Swagger:
+`http://localhost:3000/api/docs`
+
+Bull board with tasks:
+`http://localhost:3000/admin/queues`

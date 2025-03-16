@@ -1,6 +1,7 @@
 import app from './app.js';
 import sequelize from './configs/database.js';
 import logger from './utils/logger.js';
+import WebSocketService from './services/websocket/socket.js';
 
 const PORT = process.env.PORT || 3000;
 const MAX_RETRIES = 5;
@@ -44,13 +45,16 @@ async function startServer() {
       logger.error('Failed to start server:', error);
       reject(error);
     });
+
+    return server;
   });
 }
 
 async function initialize() {
   try {
     await initializeDatabase();
-    await startServer();
+    const server = await startServer();
+    WebSocketService.initialize(server);
     logger.info('Application initialized successfully.');
   } catch (error) {
     logger.error('Failed to initialize application:', error);
