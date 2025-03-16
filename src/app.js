@@ -31,11 +31,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Test route works' });
-});
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API routes
 app.use('/api', apiRoutes);

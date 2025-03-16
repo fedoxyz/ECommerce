@@ -1,11 +1,6 @@
 import app from './app.js';
 import sequelize from './configs/database.js';
 import logger from './utils/logger.js';
-import JobScheduler from './services/queue/scheduler.js';
-import { createBullBoard } from '@bull-board/api';  
-import { BullAdapter } from '@bull-board/api/bullAdapter.js';  
-import { ExpressAdapter } from '@bull-board/express'; 
-
 
 const PORT = process.env.PORT || 3000;
 const MAX_RETRIES = 5;
