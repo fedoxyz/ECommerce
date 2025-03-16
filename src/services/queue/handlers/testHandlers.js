@@ -1,4 +1,4 @@
-import { TEST } from '../events.js';
+import { TEST } from '../jobTypes.js';
 
 const testHandler1 = async (data) => {
   console.log('testHandler1:', data);

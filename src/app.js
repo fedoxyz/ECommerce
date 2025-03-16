@@ -37,14 +37,19 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use('/api', apiRoutes);
 
 // Setup BullBoard UI for job management (separate from API routes)
-const jobSchedulerQueue = JobScheduler.queue;  // Use the queue from your JobScheduler
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/admin/queues');  // Customize the URL path for BullBoard UI
 
+// Automatically register all queues
+const bullAdapters = Array.from(JobScheduler.queues.values()).map(
+  (queue) => new BullAdapter(queue)
+);
+
 createBullBoard({
-  queues: [new BullAdapter(jobSchedulerQueue)],  // Add your Bull queue here
+  queues: bullAdapters,
   serverAdapter,
 });
+
 
 // Serve BullBoard UI at /admin/queues
 app.use('/admin/queues', serverAdapter.getRouter());

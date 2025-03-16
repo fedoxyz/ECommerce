@@ -1,8 +1,6 @@
 import UserRepository from '../repositories/UserRepository.js';
 import CartRepository from '../repositories/CartRepository.js';
 import { generateToken } from '../../utils/jwt.js';
-import { TEST } from '../../services/queue/events.js'; 
-import JobScheduler from '../../services/queue/scheduler.js'; // Import JobScheduler
 
 class AuthService {
   async register(userData) {

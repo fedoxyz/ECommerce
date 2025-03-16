@@ -3,7 +3,7 @@ import ProductRepository from '../repositories/ProductRepository.js';
 import sequelize from '../../configs/database.js';
 import logger from '../../utils/logger.js';
 import JobScheduler from '../../services/queue/scheduler.js'
-import { CART } from '../../services/queue/events.js'
+import { CART } from '../../services/queue/jobTypes.js'
 import businessConfig from '../../configs/business.js';
 
 class CartService {

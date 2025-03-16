@@ -1,4 +1,4 @@
-import { CART } from '../events.js';
+import { CART } from '../jobTypes.js';
 import logger from '../../../utils/logger.js';
 import CartService from '../../../api/services/CartService.js';
 
