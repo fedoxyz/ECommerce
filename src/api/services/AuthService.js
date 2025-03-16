@@ -19,15 +19,7 @@ class AuthService {
     // Generate token
     const token = generateToken(user);
 
-    // Schedule a test job (runs after 5 seconds)
-    const testData = {
-      testId: '12345',
-      message: 'This is a test event',
-      userId: user.id,
-    };
     
-    console.log("before scheding job")
-    await JobScheduler.scheduleJob(TEST.TEST_1, testData, 0);
 
     return {
       user: {

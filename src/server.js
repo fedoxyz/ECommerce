@@ -17,7 +17,7 @@ async function initializeDatabase() {
 
       // Sync models and refresh the database if in development mode
       if (process.env.NODE_ENV === 'development') {
-        await sequelize.sync({ force: true }); // force: true will drop the existing tables
+        await sequelize.sync({ force: false }); // force: true will drop the existing tables
         logger.info('Database has been synced!');
       }
       return;

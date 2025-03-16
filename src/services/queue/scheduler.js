@@ -21,7 +21,7 @@ class JobScheduler {
     this.handlers = new Map();
 
     // Process jobs using Bull queue
-    this.queue.process(this.processJob.bind(this));
+    this.queue.process('*', this.processJob.bind(this));
 
     // Listen to Bull's internal events
     this.queue.on('completed', this.handleJobCompleted.bind(this));
@@ -43,6 +43,7 @@ class JobScheduler {
       const files = fs.readdirSync(handlersFolder);
 
       for (const file of files) {
+        logger.debug(file)
         if (file.endsWith('.js')) {
           const handlerPath = path.resolve(handlersFolder, file);
           const handlerModule = await import(handlerPath);
@@ -67,14 +68,26 @@ class JobScheduler {
    * @param {number} delayInSeconds - Delay in seconds
    * @returns {Promise<string>} - Job ID
    */
-  async scheduleJob(jobType, payload, delayInSeconds) {
-    logger.debug(`Scheduling job: ${jobType} with payload:`, payload, `Delay: ${delayInSeconds} seconds`);
-  
-    const job = await this.queue.add(
-      { jobType, payload },
-      { delay: delayInSeconds * 1000 }
-    );
+  async scheduleJob(jobType, payload, datetime, attempts=3) {
+    logger.debug(`Scheduling job: ${jobType} with payload: ${JSON.stringify(payload)} Datetime: ${datetime}`);
 
+    const now = new Date();
+    const targetDate = new Date(datetime);
+    const delta = targetDate.getTime() - now.getTime();
+    
+    const delayInSeconds = Math.max(0, Math.floor(delta / 1000));
+    const job = await this.queue.add(
+      jobType,                  
+      { jobType, payload },     
+      { 
+        delay: delayInSeconds * 1000,
+        attempts: attempts,              
+        backoff: {                
+          type: 'exponential',
+          delay: 1000          
+        }
+      }
+    );
     return job.id;
   }
 
@@ -122,6 +135,34 @@ class JobScheduler {
   registerHandler(jobType, handler) {
     this.handlers.set(jobType, handler);
     console.log(`Registered handler for event: ${jobType}`);
+  }
+
+  async cancelJob(jobId) {
+    logger.debug(`Attempting to cancel job with ID: ${jobId}`);
+    try {
+      const job = await this.queue.getJob(jobId);
+      
+      if (!job) {
+        logger.warn(`Job with ID ${jobId} not found in queue`);
+        return false;
+      }
+      
+      // Check if job is still waiting or delayed
+      const state = await job.getState();
+      
+      if (state === 'completed' || state === 'failed' || state === 'active') {
+        logger.info(`Job ${jobId} is already in state ${state}, cannot be cancelled`);
+        return false;
+      }
+      
+      // Remove the job from the queue
+      await job.remove();
+      logger.info(`Successfully cancelled job ${jobId}`);
+      return true;
+    } catch (error) {
+      logger.error(`Error cancelling job ${jobId}: ${error.message}`);
+      throw error;
+    }
   }
 }
 

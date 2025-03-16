@@ -2,6 +2,9 @@ import CartRepository from '../repositories/CartRepository.js';
 import ProductRepository from '../repositories/ProductRepository.js';
 import sequelize from '../../configs/database.js';
 import logger from '../../utils/logger.js';
+import JobScheduler from '../../services/queue/scheduler.js'
+import { CART } from '../../services/queue/events.js'
+import businessConfig from '../../configs/business.js';
 
 class CartService {
   async getCart(userId) {
@@ -13,6 +16,7 @@ class CartService {
     return cart;
   }
  
+    // Schedule a test job (runs after 5 seconds)
   async addItemToCart(userId, productId, quantity) {
     const transaction = await sequelize.transaction(); // Start transaction
     logger.info(`Transaction started for user ID: ${userId}`); // Log info when starting the transaction
@@ -39,15 +43,16 @@ class CartService {
       // Get or create user's cart within the transaction
       const cart = await CartRepository.findByUserId(userId, transaction);
       logger.info(`Cart found for user ID: ${userId}. Cart ID: ${cart.id}`); // Log info about the cart found
+
   
       // Add item to cart within the transaction
       await CartRepository.addItem(cart.id, productId, quantity, product.price, transaction);
       logger.info(`Item added to cart. Cart ID: ${cart.id}, Product ID: ${productId}, Quantity: ${quantity}`); // Log info for item added to cart
-  
+      
+      await this.handleCartExpiration(cart, transaction);
       // Commit the transaction if everything succeeds
       await transaction.commit();
       logger.info("Transaction committed successfully");
-  
       return { success: true };
     } catch (error) {
       // Rollback transaction if anything goes wrong
@@ -57,6 +62,22 @@ class CartService {
     }
   }
 
+  async handleCartExpiration(cart, transaction) {
+      if (cart.expiresAt > Date.now()) {
+          logger.info(`Canceling job for ${cart.jobId}`)
+          await JobScheduler.cancelJob(cart.jobId);
+      }
+      const payload = {
+        cart: cart,
+        message: 'This schedules cart expiration',
+      };
+      const expirationDate = businessConfig.cart.expirationTime();
+      console.log(expirationDate)
+      const jobId = await JobScheduler.scheduleJob(CART.CART_EXPIRATION, payload, expirationDate);
+      cart.jobId = jobId;
+      cart.expiresAt = expirationDate;
+      await cart.save({ transaction });
+  }
   
   async updateCartItem(userId, itemId, quantity) {
     const transaction = await sequelize.transaction(); // Start transaction
