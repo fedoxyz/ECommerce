@@ -84,9 +84,65 @@ class OrderService {
     if (!order) {
       throw new NotFoundError('Order not found');
     }
-    const updatedOrder = await OrderRepository.update(orderId, { status });
-    logger.info(`Updated order status: ${orderId} to ${status}`);
-    return updatedOrder;
+    
+    if (status === order.status) {
+      throw new BadRequestError("Current status is the same");
+    }
+    
+    // Handle expiration job if exists
+    if (order.expirationJob) {
+      const jobStatus = await JobScheduler.getJobStatus(order.expirationJob, "order");
+      if (jobStatus.isDelayed) {
+        await JobScheduler.cancelJob('order', order.expirationJob);
+        order.expirationJob = null;
+      }
+    }
+    
+    // Handle cancellation case
+    if (status === 'canceled') {
+      return this.cancelOrder(order.id, false);
+    }
+    
+    // Handle transition from canceled/expired to other status
+    if (order.status === 'canceled' || order.status === 'expired') {
+      // Check stock availability and decrement stock
+      const transaction = await sequelize.transaction();
+      try {
+        for (const orderItem of order.OrderItems) {
+          // Check if product has sufficient stock
+          if (orderItem.Product.stock < orderItem.quantity) {
+            throw new BadRequestError(`Insufficient stock for product: ${orderItem.ProductId} (${orderItem.Product.name})`);
+          }
+          
+          // Decrement stock
+          await ProductRepository.decrementStock(orderItem.ProductId, orderItem.quantity, transaction);
+          logger.info(`Stock decremented for product: ${orderItem.ProductId}, quantity: ${orderItem.quantity}`);
+          
+          // Set order item to active
+          orderItem.isActive = true;
+          await orderItem.save({ transaction });
+        }
+        
+        // Update order status
+        order.status = status;
+        order.expirationJob = null;
+        await order.save({ transaction });
+        
+        await transaction.commit();
+        logger.info(`Updated order status: ${orderId} to ${status}`);
+        return order;
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    } else {
+      // Regular status update (not from canceled/expired)
+      order.status = status;
+      order.expirationJob = null;
+      await order.save();
+      logger.info(`Updated order status: ${orderId} to ${status}`);
+      return order;
+    }
   }
 
   async handleOrderExpiration(order, transaction) {
@@ -117,14 +173,23 @@ class OrderService {
         throw new NotFoundError('Order not found');
       }
       
-      if (order.status !== 'pending') {
+      if (order.status == 'canceled' || order.status == 'expired') {
         throw new BadRequestError('Order cannot be cancelled');
       }
+      if (order.expirationJob) {
+        const jobStatus = await JobScheduler.getJobStatus(order.expirationJob, "order");
+        if (jobStatus.isDelayed) {
+          await JobScheduler.cancelJob('order', order.expirationJob);
+        }
+      }
       
-      await OrderRepository.update(orderId, { status: orderStatus, paymentStatus: "canceled" }, { transaction });
+      await OrderRepository.update(orderId, { status: orderStatus, paymentStatus: "canceled", expirationJob: null }, { transaction });
       for (const item of order.OrderItems) {
-        await ProductRepository.incrementStock(item.ProductId, item.quantity, transaction);
-        logger.info(`Stock incremented for product: ${item.ProductId}, quantity: ${item.quantity}`);
+        console.log(item)
+        if (item.isActive === true) {
+          await ProductRepository.incrementStock(item.ProductId, item.quantity, transaction);
+          logger.info(`Stock incremented for product: ${item.ProductId}, quantity: ${item.quantity}`);
+        }
       }
       
       await transaction.commit();

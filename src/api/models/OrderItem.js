@@ -14,6 +14,10 @@ const OrderItem = sequelize.define('OrderItem', {
   price: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 });
 

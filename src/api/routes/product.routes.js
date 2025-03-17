@@ -113,11 +113,43 @@ router.get('/', productController.getAllProducts);
  *         description: Product details
  *         content:
  *           application/json:
- *       404:
- *         description: Product not found
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   description: The product ID
+ *                 name:
+ *                   type: string
+ *                   description: The product name
+ *                 description:
+ *                   type: string
+ *                   description: The product description
+ *                 price:
+ *                   type: number
+ *                   format: float
+ *                   description: The product price
+ *                 stock:
+ *                   type: integer
+ *                   description: Available stock quantity
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Creation timestamp
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Last update timestamp
+ *       500:
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Product not found
  */
 router.get('/:id', productController.getProductById);
 

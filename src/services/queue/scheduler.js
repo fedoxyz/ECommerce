@@ -202,6 +202,80 @@ class JobScheduler {
       throw error;
     }
   }
+
+  /**
+   * Search for a job by ID across all queues or in a specific queue
+   * @param {string} jobId - Job ID to search for
+   * @param {string} [queueName] - Optional queue name to search in
+   * @returns {Promise<Object|null>} - Job status object or null if not found
+   */
+  async getJobStatus(jobId, queueName = null) {
+    logger.debug(`Searching for job ${jobId}${queueName ? ` in queue ${queueName}` : ' across all queues'}`);
+    
+    try {
+      // If queue name is provided, search only in that queue
+      if (queueName) {
+        const queue = this.getQueue(queueName);
+        if (!queue) {
+          logger.warn(`Queue ${queueName} not found`);
+          return null;
+        }
+        return await this._getJobStatusFromQueue(queue, jobId);
+      }
+      
+      // Otherwise search across all queues
+      for (const [queueName, queue] of this.queues.entries()) {
+        const jobStatus = await this._getJobStatusFromQueue(queue, jobId);
+        if (jobStatus) {
+          return {
+            ...jobStatus,
+            queueName
+          };
+        }
+      }
+      
+      logger.warn(`Job ${jobId} not found in any queue`);
+      return null;
+    } catch (error) {
+      logger.error(`Error searching for job ${jobId}: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Helper method to get job status from a specific queue
+   * @param {Queue} queue - Bull queue instance
+   * @param {string} jobId - Job ID
+   * @returns {Promise<Object|null>} - Job status object or null if not found
+   */
+  async _getJobStatusFromQueue(queue, jobId) {
+    const job = await queue.getJob(jobId);
+    
+    if (!job) {
+      return false;
+    }
+    
+    const state = await job.getState();
+    const progress = await job.progress();
+    const { jobType, payload } = job.data;
+    
+    return {
+      id: job.id,
+      type: jobType,
+      status: state,
+      progress,
+      isDelayed: state === 'delayed',
+      isCompleted: state === 'completed',
+      isFailed: state === 'failed',
+      isScheduled: ['delayed', 'waiting'].includes(state),
+      isActive: state === 'active',
+      createdAt: job.timestamp,
+      processedOn: job.processedOn,
+      finishedOn: job.finishedOn,
+      attempts: job.attemptsMade,
+      data: payload
+    };
+  }
 }
 
 export default new JobScheduler();

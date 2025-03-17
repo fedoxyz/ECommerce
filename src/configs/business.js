@@ -15,7 +15,7 @@ const businessConfig = {
   // Order related configurations
   order: {
     // Expiration time as a function that returns a Date object (1 hour from now)
-    pendingExpirationTime: () => new Date(Date.now() + 0.01 * 60 * 60 * 1000), // 1 hour
+    pendingExpirationTime: () => new Date(Date.now() + 0.2 * 60 * 60 * 1000), // 1 hour
   },
   
   // Product related configurations
