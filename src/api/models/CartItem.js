@@ -18,7 +18,11 @@ const CartItem = sequelize.define('CartItem', {
   },
   ProductId: {
     type: DataTypes.UUID,
-    allowNull: false,  // Assuming a CartItem is always linked to a Product
+    allowNull: false, 
+  },
+  status: {
+    type: DataTypes.ENUM('active', 'abandoned'),
+    defaultValue: 'active',
   },
   createdAt: {
     type: DataTypes.DATE,

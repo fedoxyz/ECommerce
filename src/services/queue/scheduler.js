@@ -60,7 +60,6 @@ class JobScheduler {
    * @param {string} queueName - Name of the queue
    */
   async loadHandlers(queueName) {
-    console.log(queueName)
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const handlersFolder = path.resolve(__dirname, 'handlers'); // Folder per queue

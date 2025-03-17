@@ -3,10 +3,12 @@ import sequelize from '../../configs/database.js';
 import CartRepository from '../repositories/CartRepository.js';
 import OrderRepository from '../repositories/OrderRepository.js';
 import ProductRepository from '../repositories/ProductRepository.js';
-import PaymentService from './PaymentService.js';
 import { BadRequestError, NotFoundError } from '../../utils/errors.js';
 import logger from '../../utils/logger.js';
 import { generateOrderNumber } from '../../utils/generators.js';
+import JobScheduler from '../../services/queue/scheduler.js'
+import { ORDER, CART } from '../../services/queue/jobTypes.js';
+import businessConfig from '../../configs/business.js';
 
 class OrderService {
   async createOrder(userId, data) {
@@ -36,7 +38,7 @@ class OrderService {
       }
       
       // Create order
-      const order = await OrderRepository.create({
+      var order = await OrderRepository.create({
         id: uuidv4(),
         orderNumber: generateOrderNumber(), 
         UserId: userId,
@@ -46,8 +48,13 @@ class OrderService {
         shippingAddress: data.shippingAddress,
       }, { transaction });
       
+      // Cancel cart expiration since we create order
+      await JobScheduler.cancelJob('cart', cart.jobId);
+ 
       // Clear cart after order creation
       await CartRepository.clearCart(cart.id, transaction);
+      
+      await this.handleOrderExpiration(order, transaction);
       
       await transaction.commit();
       logger.info(`Order created successfully: ${order.id}`);
@@ -82,8 +89,27 @@ class OrderService {
     return updatedOrder;
   }
 
-  async cancelOrder(orderId) {
+  async handleOrderExpiration(order, transaction) {
+    if (order.expiresAt) {
+      const message = `Order ${order.id} already has expiration date`
+      logger.warn(message);
+      throw new BadRequestError(message);
+    }
+    const payload = {
+      order: order,
+      message: 'This schedules order expiration',
+    };
+    const expirationDate = businessConfig.order.pendingExpirationTime();
+    const jobId = await JobScheduler.scheduleJob(ORDER.ORDER_EXPIRATION, payload, expirationDate);
+    order.expirationJob = jobId;
+    order.expiresAt = expirationDate;
+    await order.save({ transaction });
+  }
+
+  async cancelOrder(orderId, expired=False) {
     const transaction = await sequelize.transaction();
+    
+    const orderStatus = expired ? "expired" : "canceled";
     
     try {
       const order = await OrderRepository.findById(orderId, { transaction });
@@ -91,27 +117,20 @@ class OrderService {
         throw new NotFoundError('Order not found');
       }
       
-      if (order.status !== 'pending' && order.status !== 'paid') {
+      if (order.status !== 'pending') {
         throw new BadRequestError('Order cannot be cancelled');
       }
       
-      // Refund if the order was paid
-      if (order.status === 'paid') {
-        await PaymentService.refundPayment(order.paymentIntentId, order.totalAmount * 100);
-        
-        // Return stock only if payment was successful and stock was decremented
-        for (const item of order.OrderItems) {
-          await ProductRepository.incrementStock(item.ProductId, item.quantity, transaction);
-          logger.info(`Stock incremented for product: ${item.ProductId}, quantity: ${item.quantity}`);
-        }
+      await OrderRepository.update(orderId, { status: orderStatus, paymentStatus: "canceled" }, { transaction });
+      for (const item of order.OrderItems) {
+        await ProductRepository.incrementStock(item.ProductId, item.quantity, transaction);
+        logger.info(`Stock incremented for product: ${item.ProductId}, quantity: ${item.quantity}`);
       }
       
-      await OrderRepository.update(orderId, { status: 'cancelled' }, { transaction });
-      
       await transaction.commit();
-      logger.info(`Order cancelled: ${orderId}`);
+      logger.info(`Order canceled with status ${orderStatus}: ${orderId}`);
       
-      return await OrderRepository.findById(orderId);
+      return { message: 'Order canceled' };
     } catch (error) {
       await transaction.rollback();
       logger.error(`Order cancellation failed: ${error.message}`);

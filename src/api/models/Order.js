@@ -14,7 +14,7 @@ const Order = sequelize.define('Order', {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'),
+    type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'canceled', 'expired'),
     defaultValue: 'pending'
   },
   totalAmount: {
@@ -26,7 +26,7 @@ const Order = sequelize.define('Order', {
     allowNull: false
   },
   paymentStatus: {
-    type: DataTypes.ENUM('pending', 'paid', 'failed'),
+    type: DataTypes.ENUM('pending', 'paid', 'failed', 'canceled'),
     defaultValue: 'pending'
   },
   paymentIntentId: {
@@ -37,15 +37,14 @@ const Order = sequelize.define('Order', {
     },
     allowNull: true
   },
-  expirationTime: {
+  expiresAt: {
     type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: () => {
-      let date = new Date();
-      date.setMinutes(date.getMinutes() + 30);
-      return date;
-    }
+    allowNull: true,
   },
+  expirationJob: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  }
 });
 
 export default Order;

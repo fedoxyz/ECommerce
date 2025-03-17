@@ -84,10 +84,22 @@ async findByUserId(userId, transaction = null) {
     });
   }
 
-  async clearCart(cartId) {
-    return CartItem.destroy({
-      where: { CartId: cartId }
-    });
+  async clearCart(cartId, transaction, isAbandoned=false) {
+    if (isAbandoned) {
+      return CartItem.update(
+        { status: 'abandoned', 
+          quantity: 0
+        },
+        {
+          where: { CartId: cartId },
+          transaction: transaction
+        }
+      );
+    } else {
+      return CartItem.destroy({
+        where: { CartId: cartId }
+      });
+    }
   }
 
   async getCartTotal(cartId) {

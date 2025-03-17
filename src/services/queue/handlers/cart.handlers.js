@@ -5,7 +5,8 @@ import CartService from '../../../api/services/CartService.js';
 const expirationHandler = async (data) => {
   logger.debug('Cart expiration handler triggered with data:', data);
   try {
-    CartService.clearCart(data.cart.UserId)
+    const isAbandoned = true;
+    await CartService.clearCart(data.cart.UserId, isAbandoned)
     logger.debug("Cart is cleared")
     
   } catch (error) {
