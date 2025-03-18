@@ -41,7 +41,6 @@ class UserService {
   }
   
   async changePassword(user, oldPassword, newPassword) {
-    console.log("inside UserService changePassword before findById in repo")
     if (!user) {
       throw new Error('User not found');
     }
@@ -51,9 +50,7 @@ class UserService {
       throw new Error('Current password is incorrect');
     }
     
-    console.log("before updating UserRepository")
     await UserRepository.update(user.id, { password: newPassword });
-    console.log("before returning from changePassword in services")
     return { message: 'Password updated successfully' };
   }
 }

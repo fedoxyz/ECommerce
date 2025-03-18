@@ -7,6 +7,8 @@ import Order from './Order.js';
 import OrderItem from './OrderItem.js';
 import Review from './Review.js';
 import PaymentIntent from './PaymentIntent.js'
+import Otp from './Otp.js';
+
 
 // Define relationships
 User.hasOne(Cart);
@@ -14,6 +16,8 @@ Cart.belongsTo(User);
 
 User.hasMany(Order);
 Order.belongsTo(User);
+
+Otp.belongsTo(User, { foreignKey: 'userId' });
 
 User.hasMany(Review);
 Review.belongsTo(User);
@@ -52,5 +56,6 @@ export {
   Order,
   OrderItem,
   Review,
-  PaymentIntent
+  PaymentIntent,
+  Otp
 };

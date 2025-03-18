@@ -1,6 +1,8 @@
 import { DataTypes } from 'sequelize';
 import bcrypt from 'bcrypt';
 import sequelize from '../../configs/database.js';
+import ipRangeCheck from "ip-range-check";
+import logger from '../../utils/logger.js';
 
 const User = sequelize.define('User', {
   id: {
@@ -35,6 +37,14 @@ const User = sequelize.define('User', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  isEmailVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  lastVerifiedIps: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: false,
   }
 }, {
   hooks: {
@@ -59,6 +69,16 @@ const User = sequelize.define('User', {
 User.prototype.isValidPassword = async function(password) {
   console.log(`${password} - password, ${this.password} - this password`)
   return await bcrypt.compare(password, this.password);
+};
+
+User.prototype.isOtpRequired = async function (ip, lastIps) {
+  console.log(`${ip} - ${lastIps}`);
+
+  if (ipRangeCheck(ip, lastIps)) {
+    logger.debug("The OTP was not required on login")
+    return false;
+  }
+  return true; // OTP required if IP doesn't match any range
 };
 
 export default User;

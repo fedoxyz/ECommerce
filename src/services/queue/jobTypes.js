@@ -11,3 +11,6 @@ export const ORDER = {
   ORDER_EXPIRATION: 'order:expiration'
 }
 
+export const EMAIL = {
+  SEND_OTP: 'email:send-otp'
+}
