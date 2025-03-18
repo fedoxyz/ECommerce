@@ -45,6 +45,10 @@ const User = sequelize.define('User', {
   lastVerifiedIps: {
     type: DataTypes.ARRAY(DataTypes.STRING),
     allowNull: false,
+  },
+  emailsUsed: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
   }
 }, {
   hooks: {
@@ -55,12 +59,19 @@ const User = sequelize.define('User', {
       }
     },
     beforeUpdate: async (user) => {
-      // Either log to see if this hook is being called at all
-      console.log('beforeUpdate hook called', user.changed('password'));
-      
+      // Handle password change
       if (user.changed('password') && user.password) {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
+      }
+    
+      // Handle email change
+      if (user.changed('email') && user.isEmailVerified) {
+        user.isEmailVerified = false;
+    
+        // Add the old email to the emailsUsed array
+        const updatedEmailsUsed = [...user.emailsUsed, user.previous("email")];
+        user.setDataValue('emailsUsed', updatedEmailsUsed);
       }
     }
   }

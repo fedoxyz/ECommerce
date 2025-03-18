@@ -51,10 +51,10 @@ class AuthService {
     }
     const isOtpRequired = await user.isOtpRequired(ip, user.lastVerifiedIps);
     const purpose = "unrecognized-login";
-    if (isOtpRequired && otp == "none") {
+    if (isOtpRequired && otp == "none" && user.isEmailVerified) {
       await this.sendOTP(user.id, email, purpose);
       return {message: "The OTP code is required and has been sent, please review your email."}
-    } else if (isOtpRequired) {
+    } else if (isOtpRequired && otp != 'none') {
       try {
         logger.debug("we try")
         const isVerified = await this.verifyOTP(email, otp, purpose);

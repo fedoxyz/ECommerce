@@ -17,7 +17,6 @@ const loginSchema = Joi.object({
 });
 
 const verifyEmailSchema = Joi.object({
-  email: Joi.string().email().required(),
   otpCode: Joi.alternatives().try(
     Joi.string().pattern(/^[0-9]{6}$/),
     Joi.string().valid('send')

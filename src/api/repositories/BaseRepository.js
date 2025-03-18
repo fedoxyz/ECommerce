@@ -40,12 +40,13 @@ class BaseRepository {
       where: { id },
       returning: true,
       individualHooks: true,
-      returning: true,
       ...options,
       transaction: options.transaction || null 
     });
     if (updated) {
-      return resultData;
+      const updatedInstance = resultData[0]; 
+      console.log(updatedInstance.toJSON()); 
+      return updatedInstance; 
     }
     return null;
   }

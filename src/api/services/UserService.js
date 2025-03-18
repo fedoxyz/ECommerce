@@ -16,12 +16,7 @@ class UserService {
     };
   }
   
-  async updateUserProfile(userId, userData) {
-    const user = await UserRepository.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
+  async updateUserProfile(user, userData) {
     // Email uniqueness check if email is being updated
     if (userData.email && userData.email !== user.email) {
       const existingUser = await UserRepository.findByEmail(userData.email);
@@ -29,8 +24,10 @@ class UserService {
         throw new Error('Email already in use');
       }
     }
-    
-    const updatedUser = await UserRepository.update(userId, userData);
+    const updatedUser = await UserRepository.update(user.id, userData);
+    if (!updatedUser) {
+      return {message: "User is not updated."}
+    }
     return {
       id: updatedUser.id,
       firstName: updatedUser.firstName,
