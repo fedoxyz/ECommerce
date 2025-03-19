@@ -12,7 +12,7 @@ class UserService {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: user.role
+      roles: user.roles
     };
   }
   

@@ -8,6 +8,7 @@ import OrderItem from './OrderItem.js';
 import Review from './Review.js';
 import PaymentIntent from './PaymentIntent.js'
 import Otp from './Otp.js';
+import { Role, Permission } from './RoleBasedAccess.js'
 
 
 // Define relationships
@@ -46,6 +47,9 @@ Order.hasOne(PaymentIntent);
 PaymentIntent.belongsTo(Order, { foreignKey: "OrderId" });
 PaymentIntent.belongsTo(User);
 
+Role.belongsToMany(Permission, { through: 'RolePermissions', foreignKey: 'roleId' });
+Permission.belongsToMany(Role, { through: 'RolePermissions', foreignKey: 'permissionId' });
+
 
 export {
   User,
@@ -57,5 +61,7 @@ export {
   OrderItem,
   Review,
   PaymentIntent,
-  Otp
+  Otp,
+  Role,
+  Permission
 };

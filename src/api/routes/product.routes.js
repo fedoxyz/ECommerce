@@ -1,6 +1,6 @@
 import express from 'express';
 import productController from '../controllers/ProductController.js';
-import { authenticate, isAdmin } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 import { validateProduct } from '../validators/product.validator.js';
 
 const router = express.Router();
@@ -208,7 +208,7 @@ router.get('/:id', productController.getProductById);
  *       403:
  *         description: Forbidden (Admin access required)
  */
-router.post('/', authenticate, isAdmin, validateProduct, productController.createProduct);
+router.post('/', authenticate, authorize(['product:create']), validateProduct, productController.createProduct);
 
 /**
  * @swagger
@@ -264,7 +264,7 @@ router.post('/', authenticate, isAdmin, validateProduct, productController.creat
  *       500:
  *         description: Server error
  */
-router.put('/:id', authenticate, isAdmin, validateProduct, productController.updateProduct);
+router.put('/:id', authenticate, authorize(['product:update']), validateProduct, productController.updateProduct);
 
 /**
  * @swagger
@@ -291,7 +291,7 @@ router.put('/:id', authenticate, isAdmin, validateProduct, productController.upd
  *       404:
  *         description: Product not found
  */
-router.delete('/:id', authenticate, isAdmin, productController.deleteProduct);
+router.delete('/:id', authenticate, authorize(["product:delete"]), productController.deleteProduct);
 
 
 export default router;

@@ -30,10 +30,6 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  role: {
-    type: DataTypes.ENUM('customer', 'admin'),
-    defaultValue: 'customer'
-  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -41,6 +37,11 @@ const User = sequelize.define('User', {
   isEmailVerified: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  roles: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    defaultValue: [],
+    allowNull: false
   },
   lastVerifiedIps: {
     type: DataTypes.ARRAY(DataTypes.STRING),

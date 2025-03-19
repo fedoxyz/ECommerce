@@ -35,7 +35,6 @@ class BaseRepository {
   }
 
   async update(id, data, options = {}) {
-    console.log("inside update baserepo");
     const [updated, resultData] = await this.model.update(data, {
       where: { id },
       returning: true,

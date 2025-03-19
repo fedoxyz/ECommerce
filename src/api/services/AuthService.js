@@ -22,7 +22,8 @@ class AuthService {
       throw new Error('Email already in use');
     }
     userData = {...userData,
-      lastVerifiedIps: [ip]
+      lastVerifiedIps: [ip],
+      roles: [ 1 ]
     }
     const user = await UserRepository.create(userData);
     await CartRepository.create({ UserId: user.id });
@@ -34,6 +35,7 @@ class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        roles: user.roles, 
       },
       token
     };

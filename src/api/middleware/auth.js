@@ -1,5 +1,34 @@
 import { verifyToken } from '../../utils/jwt.js';
 import { User } from '../models/index.js';
+import RoleBasedAccessRepository from '../repositories/RoleBasedAccessRepository.js';
+
+const authorize = (requiredPermissions) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Check if user has the 'admin' role (global override)
+      const isAdmin = req.user.roles.includes(6);
+      if (isAdmin) return next(); // Admin bypasses all permission checks
+      
+      const hasPermission = await RoleBasedAccessRepository.checkPermissionsForRoles(
+        req.user.roles,
+        requiredPermissions
+      );
+
+      if (!hasPermission) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Authorization error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+};
 
 // Middleware to check if the user is authenticated
 const authenticate = async (req, res, next) => {
@@ -31,14 +60,5 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Middleware to check if the user is an admin
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Access denied. Admin role required.' });
-  }
-};
-
-export { authenticate, isAdmin };
+export { authenticate, authorize };
 

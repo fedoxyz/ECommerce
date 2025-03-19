@@ -1,7 +1,7 @@
 import express from 'express';
 import CategoryController from '../controllers/CategoryController.js';
 import { validateCategory } from '../validators/category.validator.js';
-import { authenticate, isAdmin } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -118,7 +118,7 @@ router.get('/:id', authenticate, CategoryController.getCategoryById);
  *       500:
  *         description: Internal server error
  */
-router.post('/', authenticate, isAdmin, validateCategory, CategoryController.createCategory);
+router.post('/', authenticate, authorize("category:create"), validateCategory, CategoryController.createCategory);
 
 /**
  * @swagger
@@ -161,7 +161,7 @@ router.post('/', authenticate, isAdmin, validateCategory, CategoryController.cre
  *       500:
  *         description: Internal server error
  */
-router.put('/:id', authenticate, isAdmin, validateCategory, CategoryController.updateCategory);
+router.put('/:id', authenticate, authorize(['category:update']), validateCategory, CategoryController.updateCategory);
 
 /**
  * @swagger
@@ -184,7 +184,7 @@ router.put('/:id', authenticate, isAdmin, validateCategory, CategoryController.u
  *       500:
  *         description: Internal server error
  */
-router.delete('/:id', authenticate, isAdmin, CategoryController.deleteCategory);
+router.delete('/:id', authenticate, authorize(["category:delete"]), CategoryController.deleteCategory);
 
 export default router;
 

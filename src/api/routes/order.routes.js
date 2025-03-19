@@ -1,6 +1,6 @@
 import express from 'express';
 import orderController from '../controllers/OrderController.js';
-import { authenticate, isAdmin } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 import { validateCreateOrder, validateUpdateOrderStatus } from '../validators/order.validator.js';
 
 /**
@@ -342,6 +342,6 @@ router.post('/', authenticate, validateCreateOrder, orderController.createOrder)
  *               $ref: '#/components/schemas/Error'
  * 
  */
-router.put('/:id/status', authenticate, isAdmin, validateUpdateOrderStatus, orderController.updateOrderStatus);
+router.put('/:id/status', authenticate, authorize(["order:update-status"]), validateUpdateOrderStatus, orderController.updateOrderStatus);
 
 export default router;
