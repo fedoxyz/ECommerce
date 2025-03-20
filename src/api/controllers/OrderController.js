@@ -23,7 +23,7 @@ class OrderController {
   
   async createOrder(req, res, next) {
     try {
-      const order = await OrderService.createOrder(req.user.id, req.body);
+      const order = await OrderService.createOrder(req.user.id, req.body, req.user.email);
       res.status(201).json(order);
     } catch (error) {
       next(error);

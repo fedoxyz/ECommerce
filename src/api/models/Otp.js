@@ -24,7 +24,7 @@ const Otp = sequelize.define('Otp', {
     allowNull: false
   },
   purpose: {
-    type: DataTypes.ENUM('unrecognized-login', 'reset-password', 'otp-confirmation', 'email-verification'),
+    type: DataTypes.ENUM('unrecognizedLogin', 'resetPassword', 'OTPConfirmation', 'emailVerification', 'emailChangingOld', 'emailChangingNew'),
     allowNull: false
   },
   type: {

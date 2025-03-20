@@ -12,5 +12,7 @@ export const ORDER = {
 }
 
 export const EMAIL = {
-  SEND_OTP: 'email:send-otp'
+  SEND_OTP: 'email:send-otp',
+  ORDER_CREATED: 'email:order-created',
+  CART_ABANDONED: 'email:cart-abandoned'
 }

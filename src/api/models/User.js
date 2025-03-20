@@ -68,8 +68,6 @@ const User = sequelize.define('User', {
     
       // Handle email change
       if (user.changed('email') && user.isEmailVerified) {
-        user.isEmailVerified = false;
-    
         // Add the old email to the emailsUsed array
         const updatedEmailsUsed = [...user.emailsUsed, user.previous("email")];
         user.setDataValue('emailsUsed', updatedEmailsUsed);
@@ -79,12 +77,12 @@ const User = sequelize.define('User', {
 });
 
 User.prototype.isValidPassword = async function(password) {
-  console.log(`${password} - password, ${this.password} - this password`)
+  logger.debug(`${password} - password, ${this.password} - this password`)
   return await bcrypt.compare(password, this.password);
 };
 
 User.prototype.isOtpRequired = async function (ip, lastIps) {
-  console.log(`${ip} - ${lastIps}`);
+  logger.debug(`${ip} - ${lastIps}`);
 
   if (ipRangeCheck(ip, lastIps)) {
     logger.debug("The OTP was not required on login")

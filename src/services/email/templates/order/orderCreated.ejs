@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Confirmation</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 0;">
+    <table style="width: 100%; padding: 20px;">
+      <tr>
+        <td style="padding: 20px; background-color: #ffffff; border-radius: 8px;">
+          <h2 style="font-size: 20px; font-weight: bold;">Thank you for your order!</h2>
+          <p style="font-size: 16px;">Your order has been successfully placed. Here are the details:</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr>
+                <th style="border-bottom: 1px solid #ddd; padding: 8px; text-align: left;">Product ID</th>
+                <th style="border-bottom: 1px solid #ddd; padding: 8px; text-align: left;">Quantity</th>
+                <th style="border-bottom: 1px solid #ddd; padding: 8px; text-align: left;">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% orderItems.forEach(item => { %>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;"><%= item.ProductId %></td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;"><%= item.quantity %></td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">$<%= item.price %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+          
+          <p style="font-size: 16px; margin-top: 20px;"><strong>Total Amount: $<%= totalAmount.toFixed(2) %></strong></p>
+          <p style="font-size: 14px;">Note that it takes 30 minutes for order to expire and the products return to the stock.</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

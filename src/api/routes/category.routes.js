@@ -5,6 +5,14 @@ import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Categories
+ *   description: Categories management API
+ */
+
 /**
  * @swagger
  * components:

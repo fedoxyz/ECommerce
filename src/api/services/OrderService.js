@@ -11,7 +11,7 @@ import { ORDER, CART } from '../../services/queue/jobTypes.js';
 import businessConfig from '../../configs/business.js';
 
 class OrderService {
-  async createOrder(userId, data) {
+  async createOrder(userId, data, email) {
     logger.debug(`data inside createOrder: ${JSON.stringify(data, null, 2)}`);
 
     const transaction = await sequelize.transaction();
@@ -58,6 +58,14 @@ class OrderService {
       
       await transaction.commit();
       logger.info(`Order created successfully: ${order.id}`);
+      await JobScheduler.scheduleJob(`email:order-created`, {
+        template: `order.orderCreated`,
+        to: email,
+        orderItems,
+        totalAmount,
+        subject: `Order ${order.orderNumber} is created`
+      }, new Date());
+
       return order;
     } catch (error) {
       await transaction.rollback();

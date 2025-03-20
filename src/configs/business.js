@@ -8,7 +8,7 @@ const businessConfig = {
   // Cart related configurations
   cart: {
     // Expiration time as a function that returns a Date object (30 minutes from now)
-    expirationTime: () => new Date(Date.now() + 1 * 60 * 1000), // 30 minutes
+    expirationTime: () => new Date(Date.now() + 0.2 * 60 * 1000), // 30 minutes
     maxItems: 50,
   },
   

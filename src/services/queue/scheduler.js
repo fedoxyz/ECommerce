@@ -66,13 +66,11 @@ class JobScheduler {
 
     try {
       if (!fs.existsSync(handlersFolder)) return;
-      logger.debug("Trying load handlers")
       const files = fs.readdirSync(handlersFolder);
       const queueHandlers = this.handlers.get(queueName);
 
       for (const file of files) {
         if (file.endsWith('.js') && file.startsWith(queueName + '.')) {
-          logger.debug("found file")
           const handlerPath = path.resolve(handlersFolder, file);
           const handlerModule = await import(handlerPath);
 
@@ -84,7 +82,7 @@ class JobScheduler {
         }
       }
     } catch (error) {
-      logger.error(`Error loading handlers for queue ${queueName}:`, error);
+      logger.error(`Error loading handlers for queue ${queueName}: ${error.stack}`);
     }
   }
 
@@ -112,7 +110,6 @@ class JobScheduler {
       {
         delay,
         attempts,
-        backoff: { type: 'exponential', delay: 1000 },
       }
     );
     return job.id;

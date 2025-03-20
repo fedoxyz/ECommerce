@@ -13,7 +13,12 @@ import { generateToken } from "../../utils/jwt.js"
 const MAX_OTP_ATTEMPTS = 8;
 const OTP_EXPIRY_MINUTES = 30;
 const MAX_LAST_VERIFIED_IPS = 9;
-const OTP_PURPOSES = ['unrecognized-login', 'reset-password', 'otp-confirmation', 'email-verification'];
+const OTP_PURPOSES = {'unrecognizedLogin': "Unrecognized login attempt detected", 
+  'resetPassword': "Reset password confirmation", 
+  'OTPConfirmation': "Action requires confirmation",
+  'emailVerification': "Email verification confirmation",
+  'emailChangingOld': "Email changing requires confirmation",
+  'emailChangingNew': "New emails requires confirmation"};
 
 class AuthService {
   async register(userData, ip) {
@@ -52,13 +57,18 @@ class AuthService {
       throw new Error('Invalid password');
     }
     const isOtpRequired = await user.isOtpRequired(ip, user.lastVerifiedIps);
-    const purpose = "unrecognized-login";
-    if (isOtpRequired && otp == "none" && user.isEmailVerified) {
+    const purpose = "unrecognizedLogin";
+    if (isOtpRequired && otp == "none" && ((!user.isEmailVerified && user.emailsUsed.length > 0) || (user.isEmailVerified))) {
+      if (!user.isEmailVerified && user.emailsUsed.length > 0) {
+        email = user.emailsUsed[user.emailsUsed.length - 1];
+      }
       await this.sendOTP(user.id, email, purpose);
       return {message: "The OTP code is required and has been sent, please review your email."}
     } else if (isOtpRequired && otp != 'none') {
       try {
-        logger.debug("we try")
+        if (!user.isEmailVerified && user.emailsUsed.length > 0) {
+          email = user.emailsUsed[user.emailsUsed.length - 1];
+        }
         const isVerified = await this.verifyOTP(email, otp, purpose);
         logger.debug(isVerified)
         if (!isVerified) {
@@ -88,7 +98,7 @@ class AuthService {
   }
 
   async sendOTP(userId, email, purpose) {
-    if (!OTP_PURPOSES.includes(purpose)) {
+    if (!Object.keys(OTP_PURPOSES).includes(purpose)) {
       throw new BadRequestError("Purpose is invalid");
     }
 
@@ -116,11 +126,10 @@ class AuthService {
     
     // Schedule email job without storing the actual OTP code
     await JobScheduler.scheduleJob(`email:send-otp`, {
-      template: `otp-${purpose}`,
+      template: `otp.${purpose}`,
       to: email,
-      data: {
-        otpCode,
-      }
+      otpCode,
+      subject: OTP_PURPOSES[purpose]
     }, new Date());
     
     logger.debug(`OTP email scheduled for purpose: ${purpose} to ${email}`);
@@ -134,7 +143,7 @@ class AuthService {
    
     const thirtyMinutesAgo = new Date();
     thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - OTP_EXPIRY_MINUTES);
-  
+    console.log(email, otp, purpose, thirtyMinutesAgo) 
     // Find valid OTP records
     const validOtps = await OtpRepository.findAll({
       where: {
@@ -172,10 +181,10 @@ class AuthService {
       throw new ForbiddenError("Invalid OTP code.")
     }
     if (otp=="send") {
-      await this.sendOTP(user.id, email, 'reset-password');
+      await this.sendOTP(user.id, email, 'resetPassword');
       return {message: "The OTP code was sent."}
     } else {
-      const isVerified = await this.verifyOTP(email, otp, "reset-password");
+      const isVerified = await this.verifyOTP(email, otp, "resetPassword");
       if (!isVerified) {
           throw new ForbiddenError("Invalid OTP code.")
       }
@@ -204,10 +213,10 @@ class AuthService {
   async verifyEmail(userId, email, otp) {
     try {
       if (otp == "send") {
-        await this.sendOTP(userId, email, 'email-verification');
+        await this.sendOTP(userId, email, 'emailVerification');
         return {message: "Please check your email for verification."}
       }
-      await this.verifyOTP(email, otp, 'email-verification');
+      await this.verifyOTP(email, otp, 'emailVerification');
       
       // Mark email as verified
       await UserRepository.update(userId, { isEmailVerified: true });

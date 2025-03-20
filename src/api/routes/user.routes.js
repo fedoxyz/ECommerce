@@ -1,7 +1,7 @@
 import express from 'express';
 import userController from '../controllers/UserController.js';
 import { authenticate } from '../middleware/auth.js';
-import { validateUpdateProfile, validateChangePassword } from '../validators/user.validator.js';
+import { validateUpdateProfile, validateChangePassword, validateChangeEmail } from '../validators/user.validator.js';
 
 const router = express.Router();
 
@@ -151,5 +151,34 @@ router.put('/profile', authenticate, validateUpdateProfile, userController.updat
  */
 router.post('/change-password', authenticate, validateChangePassword, userController.changePassword);
 
+/**
+ * @swagger
+ * /users/change-email:
+ *   post:
+ *     summary: Change user email
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               newEmail:
+ *                 type: string
+ *               otps:
+ *                 type: string
+ *                 example: "345654-345678"
+ *     responses:
+ *       200:
+ *         description: Email changed successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/change-email', authenticate, validateChangeEmail, userController.changeEmail);
 export default router;
 

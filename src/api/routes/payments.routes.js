@@ -6,6 +6,13 @@ const router = express.Router();
 
 /**
  * @swagger
+ * tags:
+ *   name: Payments
+ *   description: Payments management API
+ */
+
+/**
+ * @swagger
  * /payments/orders/{id}/intent:
  *   post:
  *     summary: Create a payment intent for order

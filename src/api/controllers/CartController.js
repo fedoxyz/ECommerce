@@ -13,7 +13,7 @@ class CartController {
   async addItem(req, res, next) {
     try {
       const { productId, quantity } = req.body;
-      const result = await CartService.addItemToCart(req.user.id, productId, quantity);
+      const result = await CartService.addItemToCart(req.user.id, productId, quantity, req.user.email);
       res.status(201).json(result);
     } catch (error) {
       next(error);
