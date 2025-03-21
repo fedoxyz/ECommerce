@@ -5,7 +5,6 @@ import JobScheduler from '../../services/queue/scheduler.js';
 
 import { Op } from 'sequelize';
 
-import { BadRequestError, ConflictError, ForbiddenError } from '../../utils/errors.js';
 import logger from '../../utils/logger.js';
 import crypto from 'crypto';
 import { generateToken } from "../../utils/jwt.js"
@@ -24,7 +23,7 @@ class AuthService {
   async register(userData, ip) {
     const existingUser = await UserRepository.findByEmail(userData.email);
     if (existingUser) {
-      throw new Error('Email already in use');
+      return {message: 'Email already in use'};
     }
     userData = {...userData,
       lastVerifiedIps: [ip],
@@ -49,12 +48,12 @@ class AuthService {
   async login(email, password, ip, otp) {
     const user = await UserRepository.findByEmail(email);
     if (!user || !user.isActive) {
-      throw new Error('User not found or inactive');
+      return {message:'User not found or inactive'};
     }
     const isPasswordValid = await user.isValidPassword(password);
 
     if (!isPasswordValid) {
-      throw new Error('Invalid password');
+      return {message:'Invalid password or email.'};
     }
     const isOtpRequired = await user.isOtpRequired(ip, user.lastVerifiedIps);
     const purpose = "unrecognizedLogin";
@@ -72,7 +71,7 @@ class AuthService {
         const isVerified = await this.verifyOTP(email, otp, purpose);
         logger.debug(isVerified)
         if (!isVerified) {
-          throw new ForbiddenError("The OTP code is invalid.");
+          return {message: "The OTP code is invalid."};
       } 
         var lastVerifiedIps = user.lastVerifiedIps
         if (lastVerifiedIps.length >= MAX_LAST_VERIFIED_IPS) {
@@ -99,13 +98,13 @@ class AuthService {
 
   async sendOTP(userId, email, purpose) {
     if (!Object.keys(OTP_PURPOSES).includes(purpose)) {
-      throw new BadRequestError("Purpose is invalid");
+      throw new Error("Purpose is invalid");
     }
 
     const recentAttempts = await this.getRecentOtpAttempts(userId);
     
     if (recentAttempts >= MAX_OTP_ATTEMPTS) {
-      throw new ForbiddenError('Too many OTP attempts. Please try again later.');
+      return {message: 'Too many OTP attempts. Please try again later.'};
     }
 
     // Generate 6-digit OTP code
@@ -157,7 +156,7 @@ class AuthService {
     });
     
     if (validOtps.length === 0) {
-      throw new BadRequestError("No valid OTP found. Please request a new one.");
+      throw new Error("OTP code is incorrect");
     }
     
     const latestOtp = validOtps[0];
@@ -166,7 +165,7 @@ class AuthService {
     if (latestOtp.otpHash !== otpHash) {
       // Increment fail count for security monitoring
       await OtpRepository.incrementFailCount(latestOtp.id);
-      throw new BadRequestError("The OTP code is incorrect");
+      throw new Error("OTP code is incorrect");
     }
     
     // Mark OTP as used to prevent reuse
@@ -178,7 +177,7 @@ class AuthService {
   async passwordReset(email, password, otp) {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
-      throw new ForbiddenError("Invalid OTP code.")
+      return {message: "Invalid OTP code."}
     }
     if (otp=="send") {
       await this.sendOTP(user.id, email, 'resetPassword');
@@ -186,7 +185,7 @@ class AuthService {
     } else {
       const isVerified = await this.verifyOTP(email, otp, "resetPassword");
       if (!isVerified) {
-          throw new ForbiddenError("Invalid OTP code.")
+        return {message: "Invalid OTP code."}
       }
       await UserRepository.update(user.id, { password: password });
 

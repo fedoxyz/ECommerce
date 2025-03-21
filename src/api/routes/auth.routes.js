@@ -9,7 +9,7 @@ const router = express.Router();
  * @swagger
  * tags:
  *   name: Authentication
- *   description: User authentication API (Register/Login)
+ *   description: User authentication API
  */
 
 /**
