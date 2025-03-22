@@ -40,6 +40,7 @@ class AuthService {
         lastName: user.lastName,
         email: user.email,
         roles: user.roles, 
+        isEmailVerified: false,
       },
       token
     };
@@ -91,6 +92,7 @@ class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        isEmailVerified: user.isEmailVerified
       },
       token
     };
@@ -104,7 +106,8 @@ class AuthService {
     const recentAttempts = await this.getRecentOtpAttempts(userId);
     
     if (recentAttempts >= MAX_OTP_ATTEMPTS) {
-      return {message: 'Too many OTP attempts. Please try again later.'};
+      logger.debug("Too many attempts")
+      throw new Error('Too many OTP attempts. Please try again later.');
     }
 
     // Generate 6-digit OTP code
@@ -142,7 +145,6 @@ class AuthService {
    
     const thirtyMinutesAgo = new Date();
     thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - OTP_EXPIRY_MINUTES);
-    console.log(email, otp, purpose, thirtyMinutesAgo) 
     // Find valid OTP records
     const validOtps = await OtpRepository.findAll({
       where: {

@@ -19,13 +19,6 @@ class UserService {
   }
   
   async updateUserProfile(user, userData) {
-    // Email uniqueness check if email is being updated
-    if (userData.email && userData.email !== user.email) {
-      const existingUser = await UserRepository.findByEmail(userData.email);
-      if (existingUser) {
-        throw new Error('Email already in use');
-      }
-    }
     const updatedUser = await UserRepository.update(user.id, userData);
     if (!updatedUser) {
       return {message: "User is not updated."}
@@ -35,7 +28,6 @@ class UserService {
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
       email: updatedUser.email,
-      role: updatedUser.role
     };
   }
   
@@ -67,7 +59,7 @@ class UserService {
     if (otps == "send") {
       await AuthService.sendOTP(user.id, user.email, purposeOld);
       await AuthService.sendOTP(user.id, newEmail, purposeNew);
-      return {message: "The OTP codes were sent to both emails."}
+      return {status: "success",message: "The OTP codes were sent to both emails."}
     } else {
         const otpsSep = otps.split("-")
         const otpOld = otpsSep[0]; 
@@ -79,7 +71,7 @@ class UserService {
         }
     }
     await UserRepository.update(user.id, { email: newEmail });
-    return { message: 'Email changed successfully' };
+    return { status: "success", message: 'Email changed successfully' };
   }
 }
 
