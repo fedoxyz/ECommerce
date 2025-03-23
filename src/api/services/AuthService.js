@@ -23,7 +23,7 @@ class AuthService {
   async register(userData, ip) {
     const existingUser = await UserRepository.findByEmail(userData.email);
     if (existingUser) {
-      return {message: 'Email already in use'};
+      throw new Error('Email already in use');
     }
     userData = {...userData,
       lastVerifiedIps: [ip],
