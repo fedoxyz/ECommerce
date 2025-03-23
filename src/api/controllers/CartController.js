@@ -23,7 +23,8 @@ class CartController {
   async updateItem(req, res, next) {
     try {
       const { quantity } = req.body;
-      const cart = await CartService.updateCartItem(req.user.id, req.params.itemId, quantity);
+      const email = req.user.email;
+      const cart = await CartService.updateCartItem(req.user.id, req.params.itemId, quantity, email);
       res.json(cart);
     } catch (error) {
       next(error);

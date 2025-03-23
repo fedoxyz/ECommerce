@@ -22,19 +22,25 @@ class OrderService {
       // Retrieve user's cart
       const cart = await CartRepository.findByUserId(userId, transaction);
       if (!cart || cart.CartItems.length === 0) {
-        throw new BadRequestError('Cart is empty');
+        throw new Error('Cart is empty');
       }
       
       let totalAmount = 0;
       const orderItems = [];
       
       for (const cartItem of cart.CartItems) {
+        if (cartItem.quantity > 0) {
         totalAmount += cartItem.price * cartItem.quantity;
         orderItems.push({
           ProductId: cartItem.ProductId,
           quantity: cartItem.quantity,
           price: cartItem.price
         });
+        }
+      }
+
+      if (orderItems.length < 1) {
+        throw new Error('No items found for order')
       }
       
       // Create order

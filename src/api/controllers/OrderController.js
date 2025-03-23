@@ -39,16 +39,6 @@ class OrderController {
       next(error);
     }
   }
-  
-  async processPayment(req, res, next) {
-    try {
-      const { paymentDetails } = req.body;
-      const result = await OrderService.processPayment(req.params.id, paymentDetails);
-      res.json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
 }
 
 export default new OrderController();

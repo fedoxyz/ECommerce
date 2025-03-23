@@ -63,7 +63,7 @@ async findByUserId(userId, transaction = null) {
   async updateItem(cartId, itemId, quantity, transaction) {
     // Update the item
     await CartItem.update(
-      { quantity, status: "active" },
+      { quantity },
       {
         where: { id: itemId, CartId: cartId },
         transaction
@@ -71,12 +71,13 @@ async findByUserId(userId, transaction = null) {
     );
   
     // Retrieve the updated item with the associated Product
-    const item =await CartItem.findOne({
+    const item =  CartItem.findOne({
       where: { id: itemId, CartId: cartId },
-      include: [{ model: Product }], 
+      include: [{ model: Product }], // Ensure CartItem has a belongsTo association with Product
       transaction
     });
-    return item;
+    console.log(item)
+    return item
   }
 
   async removeItem(cartId, itemId, transaction) {

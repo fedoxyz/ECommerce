@@ -80,7 +80,7 @@
         await cart.save({ transaction });
     }
     
-    async updateCartItem(userId, itemId, quantity) {
+    async updateCartItem(userId, itemId, quantity, email) {
       const transaction = await sequelize.transaction(); // Start transaction
       try {
         const cart = await CartRepository.findByUserId(userId);
@@ -107,8 +107,9 @@
         }
         
         const result = await CartRepository.updateItem(cart.id, itemId, quantity, transaction);
+        await this.handleCartExpiration(cart, email, transaction);
         transaction.commit();
-        return result[1];
+        return result;
       } catch (error) {
         transaction.rollback()
         throw error;
