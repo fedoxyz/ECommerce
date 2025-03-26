@@ -9,10 +9,11 @@ import Review from './Review.js';
 import PaymentIntent from './PaymentIntent.js'
 import Otp from './Otp.js';
 import { Role, Permission } from './RoleBasedAccess.js'
-
+import Wishlist from './Wishlist.js';
+import WishlistItem from './WishlistItem.js';
 
 // Define relationships
-User.hasOne(Cart);
+User.hasOne(Cart, { foreignKey: "cartId"});
 Cart.belongsTo(User);
 
 User.hasMany(Order);
@@ -50,6 +51,13 @@ PaymentIntent.belongsTo(User);
 Role.belongsToMany(Permission, { through: 'RolePermissions', foreignKey: 'roleId' });
 Permission.belongsToMany(Role, { through: 'RolePermissions', foreignKey: 'permissionId' });
 
+WishlistItem.belongsTo(Wishlist, { foreignKey: 'wishlistId' });
+WishlistItem.belongsTo(Product, { foreignKey: 'productId' });
+Wishlist.hasMany(WishlistItem, { foreignKey: 'wishlistId' });
+User.hasOne(Wishlist, { foreignKey: "userId"});
+User.hasMany(WishlistItem, { foreignKey: "userId"});
+
+
 
 export {
   User,
@@ -63,5 +71,7 @@ export {
   PaymentIntent,
   Otp,
   Role,
-  Permission
+  Permission,
+  Wishlist,
+  WishlistItem
 };

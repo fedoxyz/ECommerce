@@ -3,6 +3,7 @@ import sequelize from './configs/database.js';
 import logger from './utils/logger.js';
 import WebSocketService from './services/websocket/socket.js';
 
+const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 3000;
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 5000; // 5 seconds
@@ -36,7 +37,7 @@ async function initializeDatabase() {
 
 async function startServer() {
   return new Promise((resolve, reject) => {
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, HOST, () => {
       logger.info(`Server is running on port ${PORT}`);
       resolve(server);
     });

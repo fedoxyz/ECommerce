@@ -43,6 +43,14 @@ const User = sequelize.define('User', {
     defaultValue: [],
     allowNull: false
   },
+  cartId: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
+  wishlistId: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
   lastVerifiedIps: {
     type: DataTypes.ARRAY(DataTypes.STRING),
     allowNull: false,

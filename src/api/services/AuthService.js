@@ -1,5 +1,6 @@
 import UserRepository from '../repositories/UserRepository.js';
 import CartRepository from '../repositories/CartRepository.js'
+import WishlistRepository from '../repositories/WishlistRepository.js'
 import OtpRepository from '../repositories/OtpRepository.js';
 import JobScheduler from '../../services/queue/scheduler.js';
 
@@ -25,24 +26,35 @@ class AuthService {
     if (existingUser) {
       throw new Error('Email already in use');
     }
-    userData = {...userData,
+    userData = {
+      ...userData,
       lastVerifiedIps: [ip],
-      roles: [ 1 ]
+      roles: [1],
     }
     const user = await UserRepository.create(userData);
-    await CartRepository.create({ UserId: user.id });
-    const token = generateToken(user);
-    
+    const cart = await CartRepository.create({ UserId: user.id });
+    const wishlist = await WishlistRepository.create({ userId: user.id });
+  
+    userData = {
+      ...userData,
+      wishlistId: wishlist.id,
+      cartId: cart.id,
+    };
+  
+    const updatedUser = await UserRepository.update(user.id, userData);
+  
+    const token = generateToken(updatedUser);
+  
     return {
       user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        roles: user.roles, 
+        id: updatedUser.id,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        roles: updatedUser.roles,
         isEmailVerified: false,
       },
-      token
+      token,
     };
   }
 
@@ -92,7 +104,7 @@ class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        isEmailVerified: user.isEmailVerified
+        isEmailVerified: user.isEmailVerified,
       },
       token
     };

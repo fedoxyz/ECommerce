@@ -9,14 +9,27 @@ import JobScheduler from './services/queue/scheduler.js';
 import { createBullBoard } from '@bull-board/api';  
 import { BullAdapter } from '@bull-board/api/bullAdapter.js';  
 import { ExpressAdapter } from '@bull-board/express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
 app.use(cors());
+
+app.use(helmet());
+
+// Explicitly set to use HTTP
+app.use((req, res, next) => {
+  // Force HTTP if unintended HTTPS
+  if (req.protocol === 'https') {
+    return res.redirect(`http://${req.headers.host}${req.url}`);
+  }
+  next();
+});
 
 // Rate limiting
 const limiter = rateLimit({
@@ -35,6 +48,8 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API routes
 app.use('/api', apiRoutes);
+
+app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 
 // Setup BullBoard UI for job management (separate from API routes)
 const serverAdapter = new ExpressAdapter();

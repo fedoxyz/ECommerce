@@ -1,5 +1,7 @@
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Swagger definition
 const swaggerOptions = {
@@ -12,7 +14,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3000/api',
+        url: `http://localhost:3000/api`, 
         description: 'Development server',
       },
     ],
@@ -21,6 +23,4 @@ const swaggerOptions = {
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
-
 export { swaggerUi, swaggerDocs };
-
