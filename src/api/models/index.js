@@ -21,14 +21,8 @@ Order.belongsTo(User);
 
 Otp.belongsTo(User, { foreignKey: 'userId' });
 
-User.hasMany(Review);
-Review.belongsTo(User);
-
 Category.hasMany(Product, { foreignKey: 'categoryId', onDelete: "RESTRICT" });
 Product.belongsTo(Category, { foreignKey: 'categoryId' });
-
-Product.hasMany(Review);
-Review.belongsTo(Product);
 
 CartItem.belongsTo(Cart, { foreignKey: 'CartId' });
 CartItem.belongsTo(Product, { foreignKey: 'ProductId' });
@@ -57,7 +51,8 @@ Wishlist.hasMany(WishlistItem, { foreignKey: 'wishlistId' });
 User.hasOne(Wishlist, { foreignKey: "userId"});
 User.hasMany(WishlistItem, { foreignKey: "userId"});
 
-
+User.hasMany(Review, { foreignKey: "userId"});
+Product.hasMany(Review, { foreignKey: "productId"});
 
 export {
   User,
@@ -73,5 +68,5 @@ export {
   Role,
   Permission,
   Wishlist,
-  WishlistItem
+  WishlistItem,
 };

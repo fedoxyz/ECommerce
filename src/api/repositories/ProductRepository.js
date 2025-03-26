@@ -11,7 +11,6 @@ class ProductRepository extends BaseRepository {
     const options = {
       include: [
         { model: Category },
-        { model: Review }
       ],
       limit,
       offset: (page - 1) * limit,
@@ -56,9 +55,6 @@ class ProductRepository extends BaseRepository {
 
   async findTopRated(limit = 5) {
     return this.findAll({
-      include: [
-        { model: Review }
-      ],
       attributes: {
         include: [
           [sequelize.fn('AVG', sequelize.col('Reviews.rating')), 'averageRating']
