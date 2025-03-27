@@ -46,14 +46,14 @@ import businessConfig from '../../configs/business.js';
 
     
         // Add item to cart within the transaction
-        await CartRepository.addItem(cart.id, productId, quantity, product.price, transaction);
+        const cartItem = await CartRepository.addItem(cart.id, productId, quantity, product.price, transaction);
         logger.info(`Item added to cart. Cart ID: ${cart.id}, Product ID: ${productId}, Quantity: ${quantity}`); // Log info for item added to cart
         
         await this.handleCartExpiration(cart, email, transaction);
         // Commit the transaction if everything succeeds
         await transaction.commit();
         logger.info("Transaction committed successfully");
-        return { success: true };
+        return cartItem;
       } catch (error) {
         // Rollback transaction if anything goes wrong
         logger.error(`Error occurred, rolling back transaction: ${error.message}`); // Log error during the process

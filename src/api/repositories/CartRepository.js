@@ -25,7 +25,6 @@ async findByUserId(userId, transaction = null) {
     if (!cart) {
       throw new Error('Cart not found');
     }
-
     return cart;
   } catch (error) {
     throw error; // Rethrow the error so it can be handled elsewhere
@@ -39,6 +38,7 @@ async findByUserId(userId, transaction = null) {
           CartId: cartId,
           ProductId: productId
         },
+        include: [ Product ],
         transaction
       });
 

@@ -8,7 +8,7 @@ class ProductService {
   
   async getProductById(productId) {
     const product = await ProductRepository.findById(productId, {
-      include: ['Category', 'Reviews']
+      include: ['Category']
     });
     
     if (!product) {
