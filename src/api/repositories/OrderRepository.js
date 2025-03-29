@@ -64,37 +64,48 @@ class OrderRepository extends BaseRepository {
   }
 
   async findByUserId(userId, page = 1, limit = 10, options = {}) {
-    try {
-      const offset = (page - 1) * limit;
-      
-      const { count, rows } = await this.model.findAndCountAll({
-        where: { UserId: userId },
-        include: [
-          {
-            model: OrderItem,
-            include: [Product]
-          }
-        ],
-        limit,
-        offset,
-        order: [['createdAt', 'DESC']],
-        ...options
-      });
-      
-      return {
-        data: rows,
-        pagination: {
-          total: count,
-          page,
-          limit,
-          pages: Math.ceil(count / limit)
+  try {
+    const offset = (page - 1) * limit;
+
+    // First, get an accurate count of parent records only
+    const totalCount = await this.model.count({
+      where: { UserId: userId },
+      distinct: true, 
+    });
+    
+    // Then get the paginated data with associations
+    const rows = await this.model.findAll({
+      where: { UserId: userId },
+      include: [
+        {
+          model: OrderItem,
+          include: [Product]
         }
-      };
-    } catch (error) {
-      logger.error(`Failed to find orders by user ID: ${error.message}`);
-      throw error;
-    }
+      ],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      ...options
+    });
+    
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return {
+      data: rows,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        pages: totalPages
+      }
+    };
+  } catch (error) {
+    console.error(`Debug - Error details:`, error);
+    logger.error(`Failed to find orders by user ID: ${error.message}`);
+    throw error;
   }
+}
+
 }
 
 export default new OrderRepository();

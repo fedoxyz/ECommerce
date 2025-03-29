@@ -104,6 +104,7 @@ class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        roles: user.roles,
         isEmailVerified: user.isEmailVerified,
       },
       token

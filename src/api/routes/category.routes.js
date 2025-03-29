@@ -28,8 +28,6 @@ const router = express.Router();
  *   get:
  *     summary: Get all categories
  *     tags: [Categories]
- *     security:
- *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: List of categories with product count
@@ -51,7 +49,7 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.get('/', authenticate, CategoryController.getAllCategories);
+router.get('/', CategoryController.getAllCategories);
 
 /**
  * @swagger
@@ -66,8 +64,6 @@ router.get('/', authenticate, CategoryController.getAllCategories);
  *         description: Category ID
  *         schema:
  *           type: string
- *     security:
- *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: Category details
@@ -87,7 +83,7 @@ router.get('/', authenticate, CategoryController.getAllCategories);
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', authenticate, CategoryController.getCategoryById);
+router.get('/:id',CategoryController.getCategoryById);
 
 
 /**
