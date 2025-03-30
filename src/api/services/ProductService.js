@@ -17,6 +17,59 @@ class ProductService {
     
     return product;
   }
+
+  async searchProducts(searchQuery, page = 1, limit = 10, filters = {}) {
+    // Map query parameters to elasticsearch filters
+    const searchFilters = {};
+    
+    if (filters.categoryId) {
+      searchFilters.categoryId = filters.categoryId;
+    }
+    
+    if (filters.minPrice) {
+      searchFilters.minPrice = parseFloat(filters.minPrice);
+    }
+    
+    if (filters.maxPrice) {
+      searchFilters.maxPrice = parseFloat(filters.maxPrice);
+    }
+    
+    if (filters.tags) {
+      searchFilters.tags = Array.isArray(filters.tags) 
+        ? filters.tags 
+        : [filters.tags];
+    }
+    
+    const result = await this.searchOrchestrator.searchProducts(
+      searchQuery,
+      searchFilters,
+      page,
+      limit
+    );
+    
+    // If we need to fetch additional data that's not in Elasticsearch
+    // we can use the IDs to get full records from the database
+    if (filters.includeFullData && result.products.length > 0) {
+      const productIds = result.products.map(p => p.id);
+      const dbProducts = await this.repository.findByIds(productIds);
+      
+      // Map Elasticsearch results to database results to preserve order and scores
+      const productMap = {};
+      dbProducts.forEach(product => {
+        productMap[product.id] = product;
+      });
+      
+      result.products = result.products.map(product => {
+        return {
+          ...productMap[product.id]?.dataValues || {},
+          score: product.score,
+          highlights: product.highlights
+        };
+      });
+    }
+    
+    return result;
+  }
   
   async createProduct(productData) {
     // Check if category exists

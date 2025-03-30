@@ -71,6 +71,55 @@ class ProductController {
       next(error);
     }
   }
+
+  async searchProducts(req, res) {
+    try {
+      const { q } = req.query;
+      const page = parseInt(req.query.page || '1', 10);
+      const limit = parseInt(req.query.limit || '10', 10);
+      
+      if (!q) {
+        return res.status(400).json({ message: 'Search query is required' });
+      }
+      
+      const filters = {
+        categoryId: req.query.categoryId,
+        minPrice: req.query.minPrice ? parseFloat(req.query.minPrice) : undefined,
+        maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined,
+        tags: req.query.tags ? req.query.tags.split(',') : undefined,
+        includeFullData: req.query.includeFullData === 'true'
+      };
+      
+      const result = await this.productService.searchProducts(q, page, limit, filters);
+      
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error searching products:', error);
+      return res.status(500).json({ 
+        message: 'Failed to search products',
+        error: error.message 
+      });
+    }
+  }
+
+  async syncProductsToElasticsearch(req, res) {
+    try {
+      // This should be an admin-only endpoint
+      if (!req.user || !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+      
+      const result = await this.productService.syncProductsToElasticsearch();
+      
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error syncing products to Elasticsearch:', error);
+      return res.status(500).json({ 
+        message: 'Failed to sync products',
+        error: error.message 
+      });
+    }
+  }
 }
 
 export default new ProductController();

@@ -28,18 +28,3 @@ export const Permission = sequelize.define('Permission', {
   }
 });
 
-sequelize.afterSync(async () => {
-  try {
-    await Role.bulkCreate([
-      { id: 0, name: 'guest' },
-      { id: 1, name: 'customer' },
-      { id: 6, name: 'admin' }
-    ], {
-      ignoreDuplicates: true
-    });
-    logger.info('Default roles created successfully');
-  } catch (error) {
-    logger.error('Error creating default roles:', error);
-  }
-});
-
