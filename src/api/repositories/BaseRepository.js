@@ -1,5 +1,3 @@
-import logger from "../../utils/logger.js";
-
 class BaseRepository {
   constructor(model) {
     this.model = model;

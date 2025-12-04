@@ -2,7 +2,6 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.dev
     ports:
       - "${PORT:-3000}:3000"
     depends_on:
@@ -39,32 +38,33 @@ services:
       - redis-data:/data
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
-    environment:
-      - node.name=elasticsearch
-      - cluster.name=es-docker-cluster
-      - discovery.type=single-node
-      - xpack.security.enabled=true
-      - ELASTIC_USERNAME=${ES_USERNAME}
-      - ELASTIC_PASSWORD=${ES_PASSWORD}
-      - ES_JAVA_OPTS=-Xms2g -Xmx2g
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-    ports:
-      - "${ES_PORT:-9200}:9200"
+#  elasticsearch:
+#    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
+#    environment:
+#      - node.name=elasticsearch
+#      - cluster.name=es-docker-cluster
+#      - discovery.type=single-node
+#      - xpack.security.enabled=true
+#      - ELASTIC_USERNAME=${ES_USERNAME}
+#      - ELASTIC_PASSWORD=${ES_PASSWORD}
+#      - ES_JAVA_OPTS=-Xms2g -Xmx2g
+#    volumes:
+#      - elasticsearch-data:/usr/share/elasticsearch/data
+#    ports:
+#      - "${ES_PORT:-9200}:9200"
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.17.4
-    ports:
-      - "${KIBANA_PORT:-5601}:5601"
-    depends_on: 
-      - elasticsearch
-    environment:
-      - SERVERNAME="kibana"
-      - ELASTICSEARCH_HOSTS="${ES_HOST}"
-      - ELASTICSEARCH_USERNAME="${KIBANA_USERNAME}"
-      - ELASTICSEARCH_PASSWORD="${KIBANA_PASSWORD}"
+  # Kibana commented out (frozen)
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:8.17.4
+  #   ports:
+  #     - "${KIBANA_PORT:-5601}:5601"
+  #   depends_on: 
+  #     - elasticsearch
+  #   environment:
+  #     - SERVERNAME="kibana"
+  #     - ELASTICSEARCH_HOSTS="${ES_HOST}"
+  #     - ELASTICSEARCH_USERNAME="${KIBANA_USERNAME}"
+  #     - ELASTICSEARCH_PASSWORD="${KIBANA_PASSWORD}"
 
 volumes:
   postgres_data:

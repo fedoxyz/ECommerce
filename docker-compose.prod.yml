@@ -1,13 +1,9 @@
 services:
   app:
     build:
-      context: .
       dockerfile: Dockerfile.prod
-    environment:
-      - NODE_ENV=production
     restart: always
     command: node ./src/server.js
 
   db:
     restart: always
-

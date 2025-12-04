@@ -31,17 +31,15 @@ class AuthService {
       lastVerifiedIps: [ip],
       roles: [1],
     }
+
     const user = await UserRepository.create(userData);
     const cart = await CartRepository.create({ UserId: user.id });
     const wishlist = await WishlistRepository.create({ userId: user.id });
   
-    userData = {
-      ...userData,
+    const updatedUser = await UserRepository.update(user.id, {
       wishlistId: wishlist.id,
       cartId: cart.id,
-    };
-  
-    const updatedUser = await UserRepository.update(user.id, userData);
+    });
   
     const token = generateToken(updatedUser);
   
